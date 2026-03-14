@@ -13,7 +13,7 @@ def exact_step(x, params: OUParams, dt, rng):
   mu = params.mu
   sigma = params.sigma
 
-  mean = mu + (x - mu) * np.exp(-2 * theta * dt)
+  mean = mu + (x - mu) * np.exp(-theta * dt)
   var = sigma**2 * (1-np.exp(-2 * theta * dt)) / (2 * theta)
 
   return mean + np.sqrt(var) * rng.normal()
