@@ -2,6 +2,7 @@ project:
   type: default
   output-dir: docs
   render:
+    - index.qmd
     - notebooks/ou_theory.qmd
   execute-dir: project
 

@@ -1,5 +1,5 @@
 ---
-title: "Ornstein–Uhlenbeck Process for Pairs Trading"
+title: "Ornstein–Uhlenbeck Process Theory"
 author: "Rohan Jayanti, Yat Wai Heung"
 format:
   html:
