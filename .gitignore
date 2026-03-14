@@ -14,3 +14,5 @@ wheels/
 
 # macOS system files
 **/.DS_Store
+/.quarto/
+**/*.quarto_ipynb

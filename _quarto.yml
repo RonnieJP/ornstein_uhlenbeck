@@ -1,0 +1,9 @@
+project:
+  type: default
+  output-dir: docs
+  render:
+    - notebooks/ou_theory.qmd
+  execute-dir: project
+
+execute:
+  freeze: auto
