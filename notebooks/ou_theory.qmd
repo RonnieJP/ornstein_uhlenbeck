@@ -1,0 +1,126 @@
+---
+title: "Ornstein–Uhlenbeck Process for Pairs Trading"
+author: "Rohan Jayanti, Yat Wai Heung"
+format:
+  html:
+    theme: superhero
+    embed-resources: true
+    toc: true
+    number-sections: true
+    code-fold: true
+    fig-width: 8
+    fig-height: 4.5
+    toc-depth: 3
+execute:
+  echo: true
+  warning: false
+  message: false
+jupyter: python3
+---
+
+## Project aims
+
+This notebook develops the Ornstein-Uhlenbeck (OU) process as a model for mean-reverting spreads in pairs trading. We introduce the stochastic differential equation; derive its basic properties; simulate paths in discrete time; connect the model to empirical data.
+
+## Motivation
+
+Pairs trading relies on the idea that a linear combination of two asset prices behave like a mean-reverting spread. If this spread deviates sufficiently from some typical level, then one may bet on reversion. 
+
+A mean-reverting process has the deterministic pull back to the long-run mean and random shocks which disrupt this reversion. Hence we may model using an OU process.
+
+## Definition of the OU process
+
+Consider the stochastic differential equation:
+
+$$
+dX_t = \theta(\mu - X_t)\,dt + \sigma\,dW_t,
+$$
+
+where:
+
+- $X_t$ is the state at time $t$
+- $\mu$ is the long-run mean
+- $\theta > 0$ is the mean reversion speed
+- $\sigma > 0$ is the volatility parameter
+- $(W_t)_{t \ge 0}$ is a standard Wiener process
+
+Larger $\theta$ means faster pull toward $\mu$. Larger $\sigma$ means noisier paths. 
+
+Examining the drift term, $\theta(\mu - X_t)$: if $X_t > \mu$, then drift is negative, so the process pulls downwards; if $X_t < \mu$, then drift is positive, so the process pulls upwards.
+
+## Explicit solution
+
+The OU process admits an explicit solution. We can do this by solving the stochastic differential equation via an integrating factor.
+
+We can rewrite the OU SDE as:
+
+$$
+dX_t + \theta X_t\,dt = \theta \mu\,dt + \sigma\,dW_t.
+$$
+
+Notice that this resembles a linear ODE. Hence we multiply through by the usual integrating factor $e^{\theta t}$.
+
+$$
+e^{\theta t} dX_t + \theta e^{\theta t} X_t\,dt = \theta \mu e^{\theta t}\,dt + \sigma e^{\theta t}\,dW_t.
+$$
+
+Hence by the reverse of the product rule,
+
+$$
+d(e^{\theta t} X_t) = \theta \mu e^{\theta t}\,dt + \sigma e^{\theta t}\,dW_t.
+$$
+
+Integrating from 0 to t gives
+
+$$
+e^{\theta t} X_t = X_0 + \theta \mu \int_{0}^{t} e^{\theta s}\,ds + \sigma \int_{0}^{t} e^{\theta s}\,dW_s.
+$$
+
+Solving the deterministic integral gives
+$$
+\int_{0}^{t} e^{\theta s}\,ds = \frac{e^{\theta t} - 1}{\theta}.
+$$
+
+Therefore the solution to the OU SDE is
+
+$$
+X_t = X_0 e^{-\theta t} + \mu (1 - e^{-\theta t}) + \sigma \int_{0}^{t} e^{-\theta(t-s)}\,dW_s.
+$$
+
+This then gives the more standard form
+
+$$
+X_t = \mu + (X_0 - \mu) e^{-\theta t} + \sigma \int_{0}^{t} e^{-\theta(t-s)}\,dW_s.
+$$
+
+Note that this derivation avoids using Itô calculus hence is not fully rigorous. However this manipulation gives the correct structure. 
+
+We may now take the expectation and use linearity. Note that the integrand is deterministic so the expectation of the integral is $0$.
+
+$$
+\mathbb{E}[X_t] = \mu + (X_0 - \mu) e^{-\theta t}
+$$
+
+This is a deterministic exponential decay which describes how fast deviations from the long-run mean disappear on average. Letting $t \to \infty$, $\mathbb{E}[X_t] = \mu$
+
+As for the variance, only the integral survives since the other times are deterministic. Using the variance property of stochastic integrals, 
+
+$$
+\operatorname{Var}[X_t] = \operatorname{Var}[\sigma \int_{0}^{t} e^{-\theta(t-s)}\,dW_s] = \sigma^2 \int_{0}^{t} e^{-2\theta(t-s)}\,ds.
+$$
+
+Let $u = t - s$. Then 
+
+$$
+\int_{0}^{t} e^{-2\theta(t-s)}\,ds = \int_{0}^{t} e^{-2\theta u}\,du = \frac{1 - e^{-2\theta t}}{2\theta}.
+$$
+
+For the long-run variance, we let $t \to \infty$, $\operatorname{Var}[X_t] \to \frac{\sigma^2}{2\theta}$.
+
+As $t \to \infty$, the distribution of $X_t$ converges to the stationary law
+$$
+X_t \xrightarrow{d} \mathcal{N}\!\left(\mu,\frac{\sigma^2}{2\theta}\right).
+$$
+
+## Discrete-time simulation formula
+
