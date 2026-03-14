@@ -1,0 +1,35 @@
+---
+title: "Numerical Validation of OU transition"
+author: "Rohan Jayanti, Yat Wai Heung"
+format:
+  html:
+    theme: superhero
+    embed-resources: true
+    toc: true
+    number-sections: true
+    code-fold: true
+    fig-width: 8
+    fig-height: 4.5
+    toc-depth: 3
+execute:
+  echo: true
+  warning: false
+  message: false
+jupyter: python3
+---
+
+## Simulation Setup
+
+## Simulating a single-path
+
+## Mean validation
+
+To verify the expectation 
+
+- simulate many paths 
+- compute empirical mean at time $t$
+- compare this with the theoretical mean
+
+## Variance validation
+
+## Stationary distribution

@@ -1,0 +1,12 @@
+{
+  "hash": "cf1c55337d3c37c937a39da474320f49",
+  "result": {
+    "engine": "jupyter",
+    "markdown": "---\ntitle: \"Numerical Validation of OU transition\"\nauthor: \"Rohan Jayanti, Yat Wai Heung\"\nformat:\n  html:\n    theme: superhero\n    embed-resources: true\n    toc: true\n    number-sections: true\n    code-fold: true\n    fig-width: 8\n    fig-height: 4.5\n    toc-depth: 3\nexecute:\n  echo: true\n  warning: false\n  message: false\njupyter: python3\n---\n\n## Simulation Setup\n\n## Simulating a single-path\n\n## Mean validation\n\nTo verify the expectation \n\n- simulate many paths \n- compute empirical mean at time $t$\n- compare this with the theoretical mean\n\n## Variance validation\n\n## Stationary distribution\n\n",
+    "supporting": [
+      "ou_validation_files"
+    ],
+    "filters": [],
+    "includes": {}
+  }
+}

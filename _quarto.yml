@@ -4,6 +4,7 @@ project:
   render:
     - index.qmd
     - notebooks/ou_theory.qmd
+    - notebooks/ou_validation.qmd
   execute-dir: project
 
 execute:
