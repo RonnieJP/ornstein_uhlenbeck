@@ -1,6 +1,5 @@
 # functions and classes to develop
 #
-# time_grid(dt, n_steps)
 # theoretical_mean(t, x0, params)
 # theoretical_variance(t, params)
 # stationary_variance(params)
@@ -17,7 +16,7 @@ class OUParams:
   sigma: float
 
 
-def validate_params(params, dt):
+def validate_params(params: OUParams, dt):
   theta = params.theta
   sigma = params.sigma
 
@@ -31,14 +30,14 @@ def validate_params(params, dt):
     raise ValueError("dt must be positive")
 
 
-def conditional_mean(x, params, dt):
+def conditional_mean(x, params: OUParams, dt):
   validate_params(params, dt)
   theta = params.theta
   mu = params.mu
   return mu + (x - mu) * np.exp(-theta * dt)
   
 
-def conditional_variance(params, dt):
+def conditional_variance(params: OUParams, dt):
   validate_params(params, dt)
   theta = params.theta
   sigma = params.sigma
@@ -46,7 +45,7 @@ def conditional_variance(params, dt):
 
 
 def exact_step(x, params: OUParams, dt, rng):
-  ## Calculates what the next value of x is under an OU process
+  # calculates what the next value of x is under an OU process.
   validate_params(params, dt)
 
   mean = conditional_mean(x, params, dt)
@@ -56,7 +55,7 @@ def exact_step(x, params: OUParams, dt, rng):
   return mean + np.sqrt(var) * noise
 
 
-def simulate_paths(x0, params, dt, n_steps, n_paths, rng):
+def simulate_paths(x0, params: OUParams, dt, n_steps, n_paths, rng):
   validate_params(params, dt)
 
   if not isinstance(n_steps, int):
@@ -79,3 +78,16 @@ def simulate_paths(x0, params, dt, n_steps, n_paths, rng):
 
   return x
 
+def time_grid(dt, n_steps):
+  if dt <= 0:
+    raise ValueError("dt must be positive")
+  
+  if not isinstance(n_steps, int):
+    raise TypeError("n_steps must be an integer")
+  
+  if n_steps < 0:
+    raise ValueError("n_steps must be >= 0")
+  # note that here n_steps can take value 0 unlike simulate_paths.
+  # simulation needs atleast one update.
+  
+  return dt * np.arange(n_steps + 1)
