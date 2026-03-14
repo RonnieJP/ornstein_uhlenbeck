@@ -1,3 +1,3 @@
-from ornstein_uhlenbeck import diffusion
+from ornstein_uhlenbeck import ou
 
 
