@@ -2,7 +2,7 @@
 
 ## Project aims
 
-This notebook develops the Ornstein-Uhlenbeck (OU) process as a model for mean-reverting spreads in pairs trading.
+This project develops the Ornstein-Uhlenbeck (OU) process as a model for mean-reverting spreads in pairs trading.
 
 ## Research Notes
 

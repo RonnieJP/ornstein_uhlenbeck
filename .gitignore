@@ -11,3 +11,6 @@ wheels/
 
 # Direnv control
 .envrc
+
+# macOS system files
+**/.DS_Store
