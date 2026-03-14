@@ -24,9 +24,9 @@ This notebook develops the Ornstein-Uhlenbeck (OU) process as a model for mean-r
 
 ## Motivation
 
-Pairs trading relies on the idea that a linear combination of two asset prices behave like a mean-reverting spread. If this spread deviates sufficiently from some typical level, then one may bet on reversion. 
+Pairs trading relies on the idea that a linear combination of two asset prices behaves like a mean-reverting spread. If this spread deviates sufficiently from some typical level, then one may bet on reversion. 
 
-A mean-reverting process has the deterministic pull back to the long-run mean and random shocks which disrupt this reversion. Hence we may model using an OU process.
+A mean-reverting process has the deterministic pull back to the long-run mean and random shocks which disrupt this reversion. Hence we may model such behaviour using an OU process.
 
 ## Definition of the OU process
 
@@ -46,11 +46,11 @@ where:
 
 Larger $\theta$ means faster pull toward $\mu$. Larger $\sigma$ means noisier paths. 
 
-Examining the drift term, $\theta(\mu - X_t)$: if $X_t > \mu$, then drift is negative, so the process pulls downwards; if $X_t < \mu$, then drift is positive, so the process pulls upwards.
+Examining the drift term, $\theta(\mu - X_t)$: if $X_t > \mu$, then the drift is negative, so the process pulls downwards; if $X_t < \mu$, then the drift is positive, so the process pulls upwards.
 
 ## Explicit solution
 
-The OU process admits an explicit solution. We can do this by solving the stochastic differential equation via an integrating factor.
+The OU process admits an explicit solution. We can do this by solving the stochastic differential equation via an integrating factor. We use some standard properties of stochastic integrals with deterministic integrands.
 
 We can rewrite the OU SDE as:
 
@@ -64,7 +64,7 @@ $$
 e^{\theta t} dX_t + \theta e^{\theta t} X_t\,dt = \theta \mu e^{\theta t}\,dt + \sigma e^{\theta t}\,dW_t.
 $$
 
-Hence by the reverse of the product rule,
+Hence by the product rule,
 
 $$
 d(e^{\theta t} X_t) = \theta \mu e^{\theta t}\,dt + \sigma e^{\theta t}\,dW_t.
@@ -101,9 +101,9 @@ $$
 \mathbb{E}[X_t] = \mu + (X_0 - \mu) e^{-\theta t}
 $$
 
-This is a deterministic exponential decay which describes how fast deviations from the long-run mean disappear on average. Letting $t \to \infty$, $\mathbb{E}[X_t] = \mu$
+This is a deterministic exponential decay which describes how fast deviations from the long-run mean disappear on average. We have $\mathbb{E}[X_t] \to \mu$ as $t \to \infty$. 
 
-As for the variance, only the integral survives since the other times are deterministic. Using the variance property of stochastic integrals, 
+As for the variance, assuming $X_0$ is fixed, only the stochastic integral contributes to the variance. Using the variance property of stochastic integrals, 
 
 $$
 \operatorname{Var}[X_t] = \operatorname{Var}[\sigma \int_{0}^{t} e^{-\theta(t-s)}\,dW_s] = \sigma^2 \int_{0}^{t} e^{-2\theta(t-s)}\,ds.
@@ -115,6 +115,12 @@ $$
 \int_{0}^{t} e^{-2\theta(t-s)}\,ds = \int_{0}^{t} e^{-2\theta u}\,du = \frac{1 - e^{-2\theta t}}{2\theta}.
 $$
 
+The final variance function is therefore
+
+$$
+\operatorname{Var}[X_t] = \frac{\sigma^2}{2\theta}(1-e^{-2\theta t}).
+$$
+
 For the long-run variance, we let $t \to \infty$, $\operatorname{Var}[X_t] \to \frac{\sigma^2}{2\theta}$.
 
 As $t \to \infty$, the distribution of $X_t$ converges to the stationary law
@@ -124,3 +130,50 @@ $$
 
 ## Discrete-time simulation formula
 
+If we consider the same OU SDE problem and apply the explicit solution over the interval $[t, t+\Delta t]$, we get
+
+$$
+X_{t+\Delta t} = \mu + (X_t - \mu) e^{-\theta\Delta t} + \sigma \int_{t}^{t+\Delta t} e^{-\theta(t+\Delta t-s)}\,dW_s.
+$$
+
+Conditioning on $X_t$, the only random term is the stochastic integral, and since it is a centred Gaussian integral over future Brownian increments, its conditional expectation is 0. Hence
+
+$$
+\mathbb{E}[X_{t+\Delta t} \mid X_t] = \mu + (X_t - \mu) e^{-\theta\Delta t}.
+$$
+
+Given $X_t$ similarly to before, only the integral contributes to the variance:
+
+$$
+\operatorname{Var}[X_{t+\Delta t} \mid X_t] = \operatorname{Var}[\sigma \int_{t}^{t+\Delta t} e^{-\theta(t+\Delta t-s)}\,dW_s].
+$$
+
+Then using the same variance property of stochastic integrals,
+
+$$
+\operatorname{Var}[X_{t+\Delta t} \mid X_t] = \sigma^2 \int_{t}^{t+\Delta t} e^{-2\theta(t+\Delta t-s)}\,ds.
+$$
+
+Set $u=t+\Delta t-s$ then 
+
+$$
+\int_{t}^{t+\Delta t} e^{-2\theta(t+\Delta t-s)}\,ds = \int_{0}^{\Delta t} e^{-2\theta u}\,du = \frac{1-e^{-2\theta\Delta t}}{2\theta}.
+$$
+
+Therefore we have the conditional variance
+
+$$
+\operatorname{Var}[X_{t+\Delta t} \mid X_t] = \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t}).
+$$
+
+The stochastic integral of a deterministic function against Brownian motion is Gaussian, so the whole conditional law is Gaussian. Hence we have the conditional distribution of $X_{t+\Delta t}$ given $X_t$.
+
+$$
+X_{t+\Delta t} \mid X_t \sim \mathcal{N}\!\left(\mu + (X_t - \mu) e^{-\theta\Delta t}, \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t})\right).
+$$
+
+We now have the exact simulation formula. If $Z \sim \mathcal{N}\!(0, 1)$, then we have the formula
+
+$$
+X_{t+\Delta t} = \mu + (X_t - \mu)e^{-\theta\Delta t} + \sigma\sqrt{\frac{1-e^{-2\theta\Delta t}}{2\theta}}\,Z.
+$$

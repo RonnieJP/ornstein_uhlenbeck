@@ -2353,8 +2353,8 @@ window.Quarto = {
 </section>
 <section id="motivation" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="motivation"><span class="header-section-number">2</span> Motivation</h2>
-<p>Pairs trading relies on the idea that a linear combination of two asset prices behave like a mean-reverting spread. If this spread deviates sufficiently from some typical level, then one may bet on reversion.</p>
-<p>A mean-reverting process has the deterministic pull back to the long-run mean and random shocks which disrupt this reversion. Hence we may model using an OU process.</p>
+<p>Pairs trading relies on the idea that a linear combination of two asset prices behaves like a mean-reverting spread. If this spread deviates sufficiently from some typical level, then one may bet on reversion.</p>
+<p>A mean-reverting process has the deterministic pull back to the long-run mean and random shocks which disrupt this reversion. Hence we may model such behaviour using an OU process.</p>
 </section>
 <section id="definition-of-the-ou-process" class="level2" data-number="3">
 <h2 data-number="3" class="anchored" data-anchor-id="definition-of-the-ou-process"><span class="header-section-number">3</span> Definition of the OU process</h2>
@@ -2371,11 +2371,11 @@ dX_t = \theta(\mu - X_t)\,dt + \sigma\,dW_t,
 <li><span class="math inline">\((W_t)_{t \ge 0}\)</span> is a standard Wiener process</li>
 </ul>
 <p>Larger <span class="math inline">\(\theta\)</span> means faster pull toward <span class="math inline">\(\mu\)</span>. Larger <span class="math inline">\(\sigma\)</span> means noisier paths.</p>
-<p>Examining the drift term, <span class="math inline">\(\theta(\mu - X_t)\)</span>: if <span class="math inline">\(X_t &gt; \mu\)</span>, then drift is negative, so the process pulls downwards; if <span class="math inline">\(X_t &lt; \mu\)</span>, then drift is positive, so the process pulls upwards.</p>
+<p>Examining the drift term, <span class="math inline">\(\theta(\mu - X_t)\)</span>: if <span class="math inline">\(X_t &gt; \mu\)</span>, then the drift is negative, so the process pulls downwards; if <span class="math inline">\(X_t &lt; \mu\)</span>, then the drift is positive, so the process pulls upwards.</p>
 </section>
 <section id="explicit-solution" class="level2" data-number="4">
 <h2 data-number="4" class="anchored" data-anchor-id="explicit-solution"><span class="header-section-number">4</span> Explicit solution</h2>
-<p>The OU process admits an explicit solution. We can do this by solving the stochastic differential equation via an integrating factor.</p>
+<p>The OU process admits an explicit solution. We can do this by solving the stochastic differential equation via an integrating factor. We use some standard properties of stochastic integrals with deterministic integrands.</p>
 <p>We can rewrite the OU SDE as:</p>
 <p><span class="math display">\[
 dX_t + \theta X_t\,dt = \theta \mu\,dt + \sigma\,dW_t.
@@ -2384,7 +2384,7 @@ dX_t + \theta X_t\,dt = \theta \mu\,dt + \sigma\,dW_t.
 <p><span class="math display">\[
 e^{\theta t} dX_t + \theta e^{\theta t} X_t\,dt = \theta \mu e^{\theta t}\,dt + \sigma e^{\theta t}\,dW_t.
 \]</span></p>
-<p>Hence by the reverse of the product rule,</p>
+<p>Hence by the product rule,</p>
 <p><span class="math display">\[
 d(e^{\theta t} X_t) = \theta \mu e^{\theta t}\,dt + \sigma e^{\theta t}\,dW_t.
 \]</span></p>
@@ -2408,14 +2408,18 @@ X_t = \mu + (X_0 - \mu) e^{-\theta t} + \sigma \int_{0}^{t} e^{-\theta(t-s)}\,dW
 <p><span class="math display">\[
 \mathbb{E}[X_t] = \mu + (X_0 - \mu) e^{-\theta t}
 \]</span></p>
-<p>This is a deterministic exponential decay which describes how fast deviations from the long-run mean disappear on average. Letting <span class="math inline">\(t \to \infty\)</span>, <span class="math inline">\(\mathbb{E}[X_t] = \mu\)</span></p>
-<p>As for the variance, only the integral survives since the other times are deterministic. Using the variance property of stochastic integrals,</p>
+<p>This is a deterministic exponential decay which describes how fast deviations from the long-run mean disappear on average. We have <span class="math inline">\(\mathbb{E}[X_t] \to \mu\)</span> as <span class="math inline">\(t \to \infty\)</span>.</p>
+<p>As for the variance, assuming <span class="math inline">\(X_0\)</span> is fixed, only the stochastic integral contributes to the variance. Using the variance property of stochastic integrals,</p>
 <p><span class="math display">\[
 \operatorname{Var}[X_t] = \operatorname{Var}[\sigma \int_{0}^{t} e^{-\theta(t-s)}\,dW_s] = \sigma^2 \int_{0}^{t} e^{-2\theta(t-s)}\,ds.
 \]</span></p>
 <p>Let <span class="math inline">\(u = t - s\)</span>. Then</p>
 <p><span class="math display">\[
 \int_{0}^{t} e^{-2\theta(t-s)}\,ds = \int_{0}^{t} e^{-2\theta u}\,du = \frac{1 - e^{-2\theta t}}{2\theta}.
+\]</span></p>
+<p>The final variance function is therefore</p>
+<p><span class="math display">\[
+\operatorname{Var}[X_t] = \frac{\sigma^2}{2\theta}(1-e^{-2\theta t}).
 \]</span></p>
 <p>For the long-run variance, we let <span class="math inline">\(t \to \infty\)</span>, <span class="math inline">\(\operatorname{Var}[X_t] \to \frac{\sigma^2}{2\theta}\)</span>.</p>
 <p>As <span class="math inline">\(t \to \infty\)</span>, the distribution of <span class="math inline">\(X_t\)</span> converges to the stationary law <span class="math display">\[
@@ -2424,6 +2428,38 @@ X_t \xrightarrow{d} \mathcal{N}\!\left(\mu,\frac{\sigma^2}{2\theta}\right).
 </section>
 <section id="discrete-time-simulation-formula" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="discrete-time-simulation-formula"><span class="header-section-number">5</span> Discrete-time simulation formula</h2>
+<p>If we consider the same OU SDE problem and apply the explicit solution over the interval <span class="math inline">\([t, t+\Delta t]\)</span>, we get</p>
+<p><span class="math display">\[
+X_{t+\Delta t} = \mu + (X_t - \mu) e^{-\theta\Delta t} + \sigma \int_{t}^{t+\Delta t} e^{-\theta(t+\Delta t-s)}\,dW_s.
+\]</span></p>
+<p>Conditioning on <span class="math inline">\(X_t\)</span>, the only random term is the stochastic integral, and since it is a centred Gaussian integral over future Brownian increments, its conditional expectation is 0. Hence</p>
+<p><span class="math display">\[
+\mathbb{E}[X_{t+\Delta t} \mid X_t] = \mu + (X_t - \mu) e^{-\theta\Delta t}.
+\]</span></p>
+<p>Given <span class="math inline">\(X_t\)</span> similarly to before, only the integral contributes to the variance:</p>
+<p><span class="math display">\[
+\operatorname{Var}[X_{t+\Delta t} \mid X_t] = \operatorname{Var}[\sigma \int_{t}^{t+\Delta t} e^{-\theta(t+\Delta t-s)}\,dW_s].
+\]</span></p>
+<p>Then using the same variance property of stochastic integrals,</p>
+<p><span class="math display">\[
+\operatorname{Var}[X_{t+\Delta t} \mid X_t] = \sigma^2 \int_{t}^{t+\Delta t} e^{-2\theta(t+\Delta t-s)}\,ds.
+\]</span></p>
+<p>Set <span class="math inline">\(u=t+\Delta t-s\)</span> then</p>
+<p><span class="math display">\[
+\int_{t}^{t+\Delta t} e^{-2\theta(t+\Delta t-s)}\,ds = \int_{0}^{\Delta t} e^{-2\theta u}\,du = \frac{1-e^{-2\theta\Delta t}}{2\theta}.
+\]</span></p>
+<p>Therefore we have the conditional variance</p>
+<p><span class="math display">\[
+\operatorname{Var}[X_{t+\Delta t} \mid X_t] = \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t}).
+\]</span></p>
+<p>The stochastic integral of a deterministic function against Brownian motion is Gaussian, so the whole conditional law is Gaussian. Hence we have the conditional distribution of <span class="math inline">\(X_{t+\Delta t}\)</span> given <span class="math inline">\(X_t\)</span>.</p>
+<p><span class="math display">\[
+X_{t+\Delta t} \mid X_t \sim \mathcal{N}\!\left(\mu + (X_t - \mu) e^{-\theta\Delta t}, \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t})\right).
+\]</span></p>
+<p>We now have the exact simulation formula. If <span class="math inline">\(Z \sim \mathcal{N}\!(0, 1)\)</span>, then we have the formula</p>
+<p><span class="math display">\[
+X_{t+\Delta t} = \mu + (X_t - \mu)e^{-\theta\Delta t} + \sigma\sqrt{\frac{1-e^{-2\theta\Delta t}}{2\theta}}\,Z.
+\]</span></p>
 </section>
 
 </main>
