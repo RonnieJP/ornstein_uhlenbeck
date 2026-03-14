@@ -41,7 +41,7 @@ where:
 - $X_t$ is the state at time $t$
 - $\mu$ is the long-run mean
 - $\theta > 0$ is the mean reversion speed
-- $\sigma > 0$ is the volatility parameter
+- $\sigma \ge 0$ is the volatility parameter
 - $(W_t)_{t \ge 0}$ is a standard Wiener process
 
 Larger $\theta$ means faster pull toward $\mu$. Larger $\sigma$ means noisier paths. 
