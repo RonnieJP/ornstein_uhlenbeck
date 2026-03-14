@@ -8,6 +8,5 @@ This project develops the Ornstein-Uhlenbeck (OU) process as a model for mean-re
 
 💡 Right click and open in new tab for best viewing.
 
-- Ornstein-Uhlenbeck theory notebook
-  👉 [View rendered notebook](https://ronniejp.github.io/ornstein-uhlenbeck/)
-
+- 👉[Ornstein-Uhlenbeck theory notebook](notebooks/ou_theory.html)
+- 👉[Numerical Validation of OU transition](notebooks/ou_validation.html)
