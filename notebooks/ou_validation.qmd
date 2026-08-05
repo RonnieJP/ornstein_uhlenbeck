@@ -20,7 +20,111 @@ jupyter: python3
 
 ## Simulation Setup
 
-## Simulating a single-path
+```{python}
+import ornstein_uhlenbeck.ou as ou
+import numpy as np
+
+params = ou.OUParams(
+    theta = 3.0,
+    mu = 100.0,
+    sigma = 10.0
+)
+
+x0 = 90.0
+dt = 0.01
+n_steps = 1000
+n_paths_visual = 15
+n_pahts_validation = 10000
+
+rng = np.random.default_rng(42)
+
+t = ou.time_grid(dt, n_steps)
+paths_visual = ou.simulate_paths(x0, params, dt, n_steps, n_paths_visual, rng)
+paths_validation = ou.simulate_paths(x0, params, dt, n_steps, n_pahts_validation, rng)
+
+def apply_theme(fig):
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="#111A22",
+        plot_bgcolor="#111A22",
+        font=dict(size=16),
+        width=799,
+        height=500,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+        ),
+    )
+    return fig
+```
+
+## Simulating a single path
+
+```{python}
+import plotly.graph_objects as go
+
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x = t,
+        y = paths_visual[:,0],
+        name = "Simulated path",
+        mode = "lines",
+    )
+)
+
+fig.add_hline(
+    y = params.mu,
+    line_dash = "dash",
+    annotation_text = "Long-run mean",
+)
+
+fig.update_layout(
+    title = "Single Ornstein-Uhlenbeck sample path",
+    xaxis_title = "Time",
+    yaxis_title = "State"
+)
+
+apply_theme(fig)
+fig.show()
+```
+
+## Simulating multiple paths
+
+
+```{python}
+fig = go.Figure()
+
+for i in range(paths_visual.shape[1]):
+    fig.add_trace(
+        go.Scatter(
+            x = t,
+            y = paths_visual[:, i],
+            mode = "lines",
+            line = dict(width = 0.8),
+            opacity = 0.4,
+            showlegend = False,
+        )
+    )
+
+fig.add_hline(
+    y = params.mu,
+    line_dash = "dash",
+    annotation_text = "Long-run mean",
+)
+
+fig.update_layout(
+    title = "Multiple Ornstein-Uhlenbeck sample path",
+    xaxis_title = "Time",
+    yaxis_title = "State"
+)
+
+apply_theme(fig)
+fig.show()
+```
 
 ## Mean validation
 
@@ -30,6 +134,127 @@ To verify the expectation
 - compute empirical mean at time $t$
 - compare this with the theoretical mean
 
+```{python}
+empirical_mean = paths_validation.mean(axis=1)
+theoretical = ou.theoretical_mean(t, x0, params)
+
+fig = go.Figure()
+
+fig.add_trace(
+    go.Scatter(
+        x=t,
+        y=empirical_mean,
+        name="Monte Carlo",
+        mode="lines",
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=t,
+        y=theoretical,
+        name="Theory",
+        mode="lines",
+        line=dict(dash="dash"),
+    )
+)
+
+fig.update_layout(
+    title="Validation of the theoretical mean",
+    xaxis_title="Time",
+    yaxis_title="Mean",
+)
+
+apply_theme(fig)
+fig.show()
+```
+
 ## Variance validation
 
+Likewise for the variance
+
+- simulate many paths 
+- compute empirical variance at time $t$
+- compare this with the theoretical variance
+
+```{python}
+empirical_variance = paths_validation.var(axis=1)
+theoretical = ou.theoretical_variance(t, params)
+
+fig = go.Figure()
+
+fig.add_trace(
+    go.Scatter(
+        x=t,
+        y=empirical_variance,
+        name="Monte Carlo",
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=t,
+        y=theoretical,
+        name="Theory",
+        line=dict(dash="dash"),
+    )
+)
+
+fig.update_layout(
+    title="Validation of the theoretical variance",
+    xaxis_title="Time",
+    yaxis_title="Variance",
+)
+
+apply_theme(fig)
+fig.show()
+```
+
 ## Stationary distribution
+
+```{python}
+from scipy.stats import norm
+
+terminal = paths_validation[-1]
+
+x = np.linspace(
+    terminal.min(),
+    terminal.max(),
+    500,
+)
+
+pdf = norm.pdf(
+    x,
+    loc=params.mu,
+    scale=np.sqrt(ou.stationary_variance(params)),
+)
+
+fig = go.Figure()
+
+fig.add_trace(
+    go.Histogram(
+        x=terminal,
+        histnorm="probability density",
+        name="Simulation",
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=x,
+        y=pdf,
+        name="Theoretical density",
+        mode="lines",
+    )
+)
+
+fig.update_layout(
+    title="Stationary distribution",
+    xaxis_title="State",
+    yaxis_title="Density",
+    bargap=0.05,
+)
+
+apply_theme(fig)
+fig.show()
+```

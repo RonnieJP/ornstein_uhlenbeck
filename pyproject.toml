@@ -1,7 +1,7 @@
 [project]
 name = "ornstein-uhlenbeck"
 version = "0.1.0"
-description = "Add your description here"
+description = "Implementation and empirical validation of the Ornstein–Uhlenbeck process for mean-reverting financial spreads."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
