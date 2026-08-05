@@ -20,7 +20,7 @@ jupyter: python3
 
 ## Project aims
 
-This notebook develops the Ornstein-Uhlenbeck (OU) process as a model for mean-reverting spreads in pairs trading. We introduce the stochastic differential equation; derive its basic properties; simulate paths in discrete time; connect the model to empirical data.
+This notebook develops the Ornstein-Uhlenbeck (OU) process as a model for mean-reverting spreads in pairs trading. We derive its theoretical properties, implement exact discrete-time simulation, estimate model parameters from data, and apply the model to empirical financial spreads.
 
 ## Motivation
 
@@ -50,7 +50,7 @@ Examining the drift term, $\theta(\mu - X_t)$: if $X_t > \mu$, then the drift is
 
 ## Explicit solution
 
-The OU process admits an explicit solution. We can do this by solving the stochastic differential equation via an integrating factor. We use some standard properties of stochastic integrals with deterministic integrands.
+The OU process admits an explicit solution. We can do this by solving the stochastic differential equation via an integrating factor. We use standard properties of stochastic integrals with deterministic integrands.
 
 We can rewrite the OU SDE as:
 
@@ -95,7 +95,7 @@ $$
 
 Note that this derivation avoids using Itô calculus hence is not fully rigorous. However this manipulation gives the correct structure. 
 
-We may now take the expectation and use linearity. Note that the integrand is deterministic so the expectation of the integral is $0$.
+We may now take the expectation and use linearity. Note that the integrand is deterministic so the expectation of the stochastic integral is $0$.
 
 $$
 \mathbb{E}[X_t] = \mu + (X_0 - \mu) e^{-\theta t}
@@ -123,7 +123,7 @@ $$
 
 For the long-run variance, we let $t \to \infty$, $\operatorname{Var}[X_t] \to \frac{\sigma^2}{2\theta}$.
 
-As $t \to \infty$, the distribution of $X_t$ converges to the stationary law
+Since the stochastic integral in the explicit solution has a deterministic integrand, it is Gaussian. Hence, $X_t$ is Gaussian for every $t$, with mean and variance derived above. Taking the limit as $t \to \infty$ therefore gives the stationary law
 $$
 X_t \xrightarrow{d} \mathcal{N}\!\left(\mu,\frac{\sigma^2}{2\theta}\right).
 $$
@@ -166,14 +166,16 @@ $$
 \operatorname{Var}[X_{t+\Delta t} \mid X_t] = \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t}).
 $$
 
-The stochastic integral of a deterministic function against Brownian motion is Gaussian, so the whole conditional law is Gaussian. Hence we have the conditional distribution of $X_{t+\Delta t}$ given $X_t$.
+As before, the stochastic integral is Gaussian, so the conditional distribution is Gaussian with mean and variance as derived above. Hence we have the conditional distribution of $X_{t+\Delta t}$ given $X_t$.
 
 $$
 X_{t+\Delta t} \mid X_t \sim \mathcal{N}\!\left(\mu + (X_t - \mu) e^{-\theta\Delta t}, \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t})\right).
 $$
 
-We now have the exact simulation formula. If $Z \sim \mathcal{N}\!(0, 1)$, then we have the formula
+We now obtain the exact discrete-time simulation formula. Unlike Euler-Maruyama discretisation, this introduces no time-discretisation bias, as it is derived directly from the analytical solution. If $Z \sim \mathcal{N}\!(0, 1)$, then we have the formula
 
 $$
 X_{t+\Delta t} = \mu + (X_t - \mu)e^{-\theta\Delta t} + \sigma\sqrt{\frac{1-e^{-2\theta\Delta t}}{2\theta}}\,Z.
 $$
+
+The analytical results derived above provide several quantities against which the numerical implementation can be validated. Specifically, simulated sample means, variances, and stationary distributions should agree with their theoretical counterparts. We next investigate these properties numerically.
