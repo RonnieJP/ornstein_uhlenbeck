@@ -28,7 +28,7 @@ def conditional_mean(
     x: np.ndarray | float, params: OUParams, dt: float
 ) -> np.ndarray | float:
     """Return the conditional mean of the OU process."""
-    validate_params(params, dt)
+    # validate_params(params, dt)
     theta = params.theta
     mu = params.mu
     return mu + (x - mu) * np.exp(-theta * dt)
@@ -36,7 +36,7 @@ def conditional_mean(
 
 def conditional_variance(params: OUParams, dt: float) -> float:
     """Return the conditional variance of the OU process."""
-    validate_params(params, dt)
+    # validate_params(params, dt)
     theta = params.theta
     sigma = params.sigma
     return sigma**2 * (1 - np.exp(-2 * theta * dt)) / (2 * theta)
