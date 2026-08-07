@@ -34,19 +34,32 @@ where:
 - $\sigma \ge 0$ is the volatility parameter
 - $(W_t)_{t \ge 0}$ is a standard Wiener process
 
-By the defintion of the OU process, the state at time $t+\Delta t$ is determined only by the Brownian process that occured at time $t$; hence, an AR(1) (First-Order Autoregressive) model may be used to estimate the parameters.
-
-Referencing the exact discrete-time simulation formula, we have
+By the defintion of the OU process, the state at time $t+\Delta t$ is determined only by the Brownian process that occured at time $t$, described by the exact discrete-time simulation formula below:
 
 $$
-X_{t+\Delta t} = \mu + (X_t - \mu)e^{-\theta\Delta t} + \sigma\sqrt{\frac{1-e^{-2\theta\Delta t}}{2\theta}}\,Z,
+X_{t+\Delta t} = \mu + (X_t - \mu)e^{-\theta\Delta t} + \sigma\sqrt{\frac{1-e^{-2\theta\Delta t}}{2\theta}}\,Z.
 $$
 
-that which resembles the formula for the AR(1) model,
+We have decided to use Maximum Likelihood Estimation (MLE), which yielded increasingly accurate estimated values with increasing number of timesteps. Since each value $X_{t_{i+1}}$ for $i > 0$ independently follows a Gaussian distribution (shown below), the OU process is classified as an IID (Independent and Identically Distributed) sequence, satisfying MLE modelling assumptions. 
+$$
+X_{t_{i+1}} \mid X_{t_i} \sim \mathcal{N}\!\left(\mu + (X_{t_i} - \mu) e^{-\theta\Delta t}, \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t})\right)
+$$
+Expanding on the conditional distribution, we obtain the time-independent transition density function,
 
 $$
-X_{t+\Delta t} = 
+f(X_{t_{i+1}}\mid X_{t_i}) = \frac{1}{\sqrt{2\pi \hat{v}}}\,\exp\left(-\frac{(X_{t_{i+1}}-\hat{m})^2}{2\hat{v}}\right),
 $$
+where $$\hat{v} = \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t}),$$
+and $$\hat{m} = \mu + (X_{t_i} - \mu) e^{-\theta\Delta t}.$$
+The log likelihood function of this probability density function can be written as
+$$
+\mathscr{l}\,(\theta,\mu,\sigma^2) = \log\left(\prod_{0}^{n-1}f(X_{t_{i+1}}\mid X_{t_i})\right),
+$$
+which is simplified via the log property to
+$$
+\mathscr{l}\,(\theta,\mu,\sigma^2) = -\frac{1}{2}\sum_{0}^{n-1}\left[\log\left(2\pi\sigma^2\left(\frac{1-e^{-2\theta\Delta t}}{2\theta}\right)\right) + \frac{2\theta\,(X_{t_{i+1}}-\mu-(X_{t_i}-\mu)e^{-\theta\Delta t})^2}{\sigma^2(1-e^{-2\theta\Delta t})}\right].
+$$
+In the code block below, we implemented the above formula and minimised the negative likelihood function using `scipy.optimize.minimize`. Note that using MLE provides the advantage of manually setting bounds on estimations when compared to other models such Autoregression(1). Also note that, the sample mean `path.mean()` is an effective initial estimator for the long-run mean $\mu$, whereas the most effective initial estimators for parameters $\theta$ and $\sigma$ can be any value within their respective bounds.
 
 ```{python}
 import numpy as np
