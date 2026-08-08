@@ -22,4 +22,5 @@ This project develops the Ornstein-Uhlenbeck (OU) process as a model for mean-re
 
 - 👉[Ornstein-Uhlenbeck theory notebook](notebooks/ou_theory.html)
 - 👉[Numerical Validation of OU transition](notebooks/ou_validation.html)
-  
+- 👉[Estimation of Model Parameters](notebooks/ou_estimation.html)
+- 👉[Synthetic and Real Spread Backtest](notebooks/ou_strategy_backtest.html)

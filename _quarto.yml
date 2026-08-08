@@ -6,6 +6,7 @@ project:
     - notebooks/ou_theory.qmd
     - notebooks/ou_validation.qmd
     - notebooks/ou_estimation.qmd
+    - notebooks/ou_strategy_backtest.qmd
   execute-dir: project
 
 execute:
