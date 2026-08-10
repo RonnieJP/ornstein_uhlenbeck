@@ -1,0 +1,27 @@
+---
+title: "Backtesting the spread of correlated stocks"
+author: "Rohan Jayanti, Yat Wai Heung"
+format:
+  html:
+    theme: superhero
+    embed-resources: true
+    toc: true
+    number-sections: true
+    code-fold: true
+    fig-width: 8
+    fig-height: 4.5
+    toc-depth: 3
+execute:
+  echo: true
+  warning: false
+  message: false
+jupyter: python3
+---
+
+```{python}
+import yfinance as yf
+shell = yf.download(["SHEL"], period = "6mo")
+bp = yf.download(["BP"], period = "6mo")
+print(shell)
+print(bp)
+```
