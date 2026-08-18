@@ -23,7 +23,7 @@ jupyter: python3
 
 In order to show that the OU process can be applied to pairs trading we will first construct a synthetic spread and then move to real life data. For real pairs, we first investigate a linear spread, given two asset price series. We then fit the OU model to the observed spread.
 
-## Constructing a synthetic spread
+## Constructing a Synthetic Spread
 
 Let us generate an OU process and treat it as if it were an observed spread.
 
@@ -93,4 +93,47 @@ fig.update_layout(
 apply_theme(fig)
 fig.show()
 ```
- 
+We will now devise a trading rule. For the synthetic spread, we will define a standard threshold strategy based on deviations from the long-run mean.
+
+Since
+
+$$
+S_t\sim\mathcal{N}(\mu,\frac{\sigma^2}{2\theta})
+$$
+
+in stationarity, the stationary standard deviation is
+
+$$
+\sigma_S=\frac{\sigma}{\sqrt{2\theta}}.
+$$
+
+For our parameters,
+
+$$
+\sigma_S=\frac{1}{\sqrt{4}}=0.5.
+$$
+
+Define thresholds in terms of stationary standard deviations as follows:
+
+- Long spread if $S_t\lt\mu-2\sigma_S$
+- Short spread if $S_t\gt\mu+2\sigma_S$
+- Exit when $S_t$ returns to $\mu$
+
+With our parameters that is:
+
+- Long spread if $S_t\lt-1$
+- Short spread if $S_t\gt1$
+- Close position when $S_t=0$
+
+
+```{python}
+import yfinance as yf
+
+prices = yf.download(
+    ["SHEL", "BP"],
+    period="5y",
+    auto_adjust=True,
+)["Close"]
+
+prices = prices[["SHEL", "BP"]].dropna()
+```
