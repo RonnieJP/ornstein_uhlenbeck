@@ -1,5 +1,5 @@
 ---
-title: "Numerical Validation of OU transition"
+title: "Numerical Validation of OU Transition"
 author: "Rohan Jayanti, Yat Wai Heung"
 format:
   html:
@@ -18,7 +18,42 @@ execute:
 jupyter: python3
 ---
 
+We previously introduced the Ornstein-Uhlenbeck (OU) process theoretically. This section provides a numerical validation of the corresponding transition and simulation methods. The objective is to verify that the simulated process reproduces the principal theoretical properties of the OU model. 
+
+For a process satisfying 
+
+$$
+dX_t = \theta(\mu - X_t)\,dt + \sigma\,dW_t,
+$$
+
+the OU process has a known conditional distribution and closed-form expressions for its mean and variance. Naturally, we may use these analytical results as benchmarks against which the numerical simulation can be compared.
+
+The validation considers four properties:
+
+1. Individual simulated paths should exhibit mean-reverting behaviour.
+2. The empirical mean across many simulations should agree with the theoretical mean.
+3. The empirical variance should agree with the theoretical variance.
+4. The distribution of the process at a sufficiently long time should approach its stationary Gaussian distribution.
+
+Note that the simulations use a fixed random seed to ensure numerical results are reproducible.
+
 ## Simulation Setup
+
+The OU parameters are chosen as
+
+$$
+\theta=3,\qquad \mu=100,\qquad \sigma=10,
+$$
+
+with initial value
+
+$$
+X_0=90.
+$$
+
+The parameter $\theta$ controls the rate of mean reversion, so the choice $\theta=3$ produces relatively rapid movement towards the long-run mean. The long-run mean is $\mu=100$, and finally, $\sigma=10$ determines the magnitude of the stochastic fluctuations around this mean.
+
+Two sets of simulations are generated. The first contains 15 paths and is used for visual inspection of the behaviour of the process. The second contains 10,000 paths and is used for the statistical validation. The larger number of paths reduces Monte Carlo error, allowing the empirical quantities to be compared more meaningfully with their theoretical counterparts.
 
 ```{python}
 import ornstein_uhlenbeck.ou as ou
@@ -61,7 +96,15 @@ def apply_theme(fig):
     return fig
 ```
 
-## Simulating a single path
+## Simulating a Single Path
+
+The single simulation provides an initial qualitative check of the OU dynamics.
+
+Starting from $X_0=90$, the process is initially below its long-run mean of $100$. The mean-reverting drift therefore tends to push the process upwards towards $100$. At the same time, the Brownian noise produces random fluctuations around this deterministic tendency.
+
+A typical OU sample path should not move monotonically towards the mean. Instead, it should fluctuate randomly while exhibiting a tendency to return towards the long-run level following sufficiently large deviations, and this expected behaviour is indeed exhibited. 
+
+The dashed line in the figure represents the long-run mean $\mu=100$.
 
 ```{python}
 import plotly.graph_objects as go
@@ -92,8 +135,13 @@ apply_theme(fig)
 fig.show()
 ```
 
-## Simulating multiple paths
+## Simulating Multiple Paths
 
+A collection of sample paths provides a clearer picture of the distribution of potential trajectories.
+
+All paths begin at the same initial value. However, the independent Brownian shocks cause them to diverge over time. The mean-reverting drift acts to pull the process towards $\mu=100$, resulting in a bounded behaviour rather than the unbounded characteristic of a standard Brownian motion.
+
+This simulation of 15 paths is primarily qualitative. The larger set of 10,000 paths will be used later for the quantitative validation.
 
 ```{python}
 fig = go.Figure()
@@ -126,13 +174,19 @@ apply_theme(fig)
 fig.show()
 ```
 
-## Mean validation
+## Mean Validation
 
-To verify the expectation 
+The OU process has a known theoretical expectation. For the parameterisation used here,
 
-- simulate many paths 
-- compute empirical mean at time $t$
-- compare this with the theoretical mean
+$$
+\mathbb{E}[X_t]=\mu+(X_0-\mu)e^{-\theta t}.
+$$
+
+Since $X_0=90$ and $\mu=100$, the theoretical mean begins at $90$ and approaches $100$ exponentially as $t$ increases.
+
+To validate this result numerically, the simulated paths are averaged across the 10,000 independent Monte Carlo trajectories at each time point. The empirical mean is then plotted against the theoretical expression.
+
+We can observe tight fluctuations of the empirical mean around the theoretical mean, thus providing some validation of our simulation process.
 
 ```{python}
 empirical_mean = paths_validation.mean(axis=1)
@@ -169,13 +223,26 @@ apply_theme(fig)
 fig.show()
 ```
 
-## Variance validation
+## Variance Validation
 
-Likewise for the variance
+The theoretical variance of the OU process is
 
-- simulate many paths 
-- compute empirical variance at time $t$
-- compare this with the theoretical variance
+$$
+\operatorname{Var}(X_t)
+=
+\frac{\sigma^2}{2\theta}
+\left(1-e^{-2\theta t}\right).
+$$
+
+It increases from zero and converges to the stationary variance
+
+$$
+\operatorname{Var}(X_\infty)
+=
+\frac{\sigma^2}{2\theta}.
+$$
+
+The empirical variance obtained from the simulated paths is compared with the theoretical expression below. Close agreement between the two provides a numerical validation of the second-order behaviour of the OU simulation.
 
 ```{python}
 empirical_variance = paths_validation.var(axis=1)
@@ -210,7 +277,20 @@ apply_theme(fig)
 fig.show()
 ```
 
-## Stationary distribution
+## Stationary Distribution
+
+As $t\to\infty$, the OU process converges in distribution to the stationary Gaussian distribution
+
+$$
+X_\infty
+\sim
+N\left(
+\mu,
+\frac{\sigma^2}{2\theta}
+\right).
+$$
+
+The terminal values of the simulated paths are compared with this theoretical stationary density.
 
 ```{python}
 from scipy.stats import norm
@@ -258,3 +338,9 @@ fig.update_layout(
 apply_theme(fig)
 fig.show()
 ```
+
+## Validation Summary
+
+The numerical results provide evidence that the simulation reproduces the key theoretical properties of the OU process. The simulated mean and variance agree with their analytical expressions, and the terminal distribution is consistent with the theoretical stationary Gaussian distribution.
+
+Together, these results validate the numerical implementation of the OU transition and provide a basis for its use in the subsequent backtesting analysis.

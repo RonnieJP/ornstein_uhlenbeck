@@ -1,5 +1,5 @@
 ---
-title: "Parameter estimation of OU transition"
+title: "Parameter Estimation for the OU Process"
 author: "Rohan Jayanti, Yat Wai Heung"
 format:
   html:
@@ -20,7 +20,7 @@ jupyter: python3
 
 ## Methodology
 
-As seen in Ornstein-Uhlenbeck Process Theory, we consider the stochastic differential equation:
+As seen in Ornstein-Uhlenbeck Process Theory, we consider the stochastic differential equation
 
 $$
 dX_t = \theta(\mu - X_t)\,dt + \sigma\,dW_t,
@@ -31,40 +31,129 @@ where:
 - $X_t$ is the state at time $t$
 - $\mu$ is the long-run mean
 - $\theta > 0$ is the mean reversion speed
-- $\sigma \ge 0$ is the volatility parameter
-- $(W_t)_{t \ge 0}$ is a standard Wiener process
+- $\sigma \geq 0$ is the volatility parameter
+- $(W_t)_{t \geq 0}$ is a standard Wiener process
 
-By the defintion of the OU process, the state at time $t+\Delta t$ is determined only by the Brownian process that occured at time $t$, described by the exact discrete-time simulation formula below:
-
-$$
-X_{t+\Delta t} = \mu + (X_t - \mu)e^{-\theta\Delta t} + \sigma\sqrt{\frac{1-e^{-2\theta\Delta t}}{2\theta}}\,Z.
-$$
-
-We have decided to use Maximum Likelihood Estimation (MLE), which yielded increasingly accurate estimated values with increasing number of timesteps. Since each value $X_{t_{i+1}}$ for $i > 0$ independently follows a Gaussian distribution (shown below), the OU process is classified as an IID (Independent and Identically Distributed) sequence, satisfying MLE modelling assumptions. 
-$$
-X_{t_{i+1}} \mid X_{t_i} \sim \mathcal{N}\!\left(\mu + (X_{t_i} - \mu) e^{-\theta\Delta t}, \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t})\right)
-$$
-Expanding on the conditional distribution, we obtain the time-independent transition density function,
+By the definition of the OU process, the state at time $t+\Delta t$ can be expressed in terms of the current state $X_t$ and the Brownian increment over the interval $[t,t+\Delta t]$. This gives the exact discrete-time simulation formula
 
 $$
-f(X_{t_{i+1}}\mid X_{t_i}) = \frac{1}{\sqrt{2\pi \hat{v}}}\,\exp\left(-\frac{(X_{t_{i+1}}-\hat{m})^2}{2\hat{v}}\right),
+X_{t+\Delta t}
+=
+\mu + (X_t - \mu)e^{-\theta\Delta t}
++
+\sigma\sqrt{\frac{1-e^{-2\theta\Delta t}}{2\theta}}\,Z,
 $$
-where $$\hat{v} = \frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t}),$$
-and $$\hat{m} = \mu + (X_{t_i} - \mu) e^{-\theta\Delta t}.$$
-The log likelihood function of this probability density function can be written as
+
+where $Z\sim\mathcal{N}(0,1)$.
+
+For the general case where the observation times are not necessarily equally spaced, define the interval-specific time step by
+
 $$
-\mathscr{l}\,(\theta,\mu,\sigma^2) = \log\left(\prod_{0}^{n-1}f(X_{t_{i+1}}\mid X_{t_i})\right),
+\Delta t_i = t_{i+1}-t_i.
 $$
-which is simplified via the log property to
+
+In the simulation considered here, the time grid is equally spaced, so $\Delta t_i=0.01$ for all $i$.
+
+Since the OU process is Markovian, the conditional distribution of $X_{t_{i+1}}$ given $X_{t_i}$ depends only on the current state $X_{t_i}$. For each interval, this conditional distribution is Gaussian:
+
 $$
-\mathscr{l}\,(\theta,\mu,\sigma^2) = -\frac{1}{2}\sum_{0}^{n-1}\left[\log\left(2\pi\sigma^2\left(\frac{1-e^{-2\theta\Delta t}}{2\theta}\right)\right) + \frac{2\theta\,(X_{t_{i+1}}-\mu-(X_{t_i}-\mu)e^{-\theta\Delta t})^2}{\sigma^2(1-e^{-2\theta\Delta t})}\right].
+X_{t_{i+1}} \mid X_{t_i}
+\sim
+\mathcal{N}\!\left(
+\mu + (X_{t_i} - \mu)e^{-\theta\Delta t_i},
+\frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t_i})
+\right).
 $$
-In the code block below, we implemented the above formula and minimised the negative likelihood function using `scipy.optimize.minimize`. Note that using MLE provides the advantage of manually setting bounds on estimations when compared to other models such Autoregression(1). Also note that, the sample mean `path.mean()` is an effective initial estimator for the long-run mean $\mu$, whereas the most effective initial estimators for parameters $\theta$ and $\sigma$ can be any value within their respective bounds.
+
+Although the observations of an OU process are not independent, these conditional transition densities can be combined to construct the likelihood of an observed path. We therefore use Maximum Likelihood Estimation (MLE) to estimate the model parameters $\theta$, $\mu$, and $\sigma$.
+
+The transition density can be written as
+
+$$
+f(X_{t_{i+1}}\mid X_{t_i})
+=
+\frac{1}{\sqrt{2\pi v_i}}
+\exp\left(
+-\frac{(X_{t_{i+1}}-m_i)^2}{2v_i}
+\right),
+$$
+
+where
+
+$$
+v_i =
+\frac{\sigma^2}{2\theta}(1-e^{-2\theta\Delta t_i}),
+$$
+
+and
+
+$$
+m_i =
+\mu + (X_{t_i}-\mu)e^{-\theta\Delta t_i}.
+$$
+
+The log likelihood function is therefore
+
+$$
+\mathscr{l}(\theta,\mu,\sigma)
+=
+\log\left(
+\prod_{i=0}^{n-1}
+f(X_{t_{i+1}}\mid X_{t_i})
+\right),
+$$
+
+which can be simplified using the properties of logarithms to give
+
+$$
+\mathscr{l}(\theta,\mu,\sigma)
+=
+-\frac{1}{2}
+\sum_{i=0}^{n-1}
+\left[
+\log\left(
+2\pi\sigma^2
+\left(
+\frac{1-e^{-2\theta\Delta t_i}}{2\theta}
+\right)
+\right)
++
+\frac{
+2\theta
+\left(
+X_{t_{i+1}}
+-\mu
+-(X_{t_i}-\mu)e^{-\theta\Delta t_i}
+\right)^2
+}{
+\sigma^2(1-e^{-2\theta\Delta t_i})
+}
+\right].
+$$
+
+In the code block below, we implement the above formula and minimise the negative log likelihood using `scipy.optimize.minimize`.
+
+## Simulation Setup
+
+For the parameter estimation, a single OU path is simulated using the parameter values
+
+$$
+\theta = 3.0,\qquad
+\mu = 100.0,\qquad
+\sigma = 10.0,
+$$
+
+with initial value
+
+$$
+X_0 = 90.0.
+$$
+
+The time step is $\Delta t=0.01$, so $\Delta t_i=0.01$ for all $i$, and the simulation consists of 50,000 time steps, giving a total simulation horizon of 500 time units. A single path is used for the estimation procedure, with the observations from this path providing the data for the likelihood function.
 
 ```{python}
 import numpy as np
-import math
-from scipy.optimize import minimize, Bounds
+from scipy.optimize import minimize
 import ornstein_uhlenbeck.ou as ou
 
 params = ou.OUParams(
@@ -83,6 +172,54 @@ rng = np.random.default_rng(42)
 t = ou.time_grid(dt, n_steps)
 path = ou.simulate_paths(x0, params, dt, n_steps, n_paths, rng)
 
+import plotly.graph_objects as go
+
+def apply_theme(fig):
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="#111A22",
+        plot_bgcolor="#111A22",
+        font=dict(size=16),
+        width=799,
+        height=500,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+        ),
+    )
+    return fig
+
+fig = go.Figure()
+
+fig.add_trace(
+    go.Scatter(
+        x=t,
+        y=path[:, 0],
+        mode="lines",
+        name="Simulated path",
+    )
+)
+
+fig.add_hline(
+    y=params.mu,
+    line_dash="dash",
+    annotation_text="Long-run mean",
+)
+
+fig.update_layout(
+    title="Simulated OU path used for parameter estimation",
+    xaxis_title="Time",
+    yaxis_title="State",
+)
+
+apply_theme(fig)
+fig.show()
+```
+
+```{python}
 def neg_log_likelihood(x,t,params):
     p = ou.OUParams(
         theta = params[0],
@@ -101,9 +238,6 @@ def neg_log_likelihood(x,t,params):
 
     return -ll
 
-x1 = [path[i] for i in range(0,n_steps-1)]
-x0 = [path[i+1] for i in range(0,n_steps-1)]
-
 m = path.mean()
 
 initial_params = [100,m,50]
@@ -113,4 +247,22 @@ bound = [(0, None), (None, None), (0, None)]
 print(minimize(objective_func, initial_params, method = "Powell", bounds = bound))
 ```
 
+## Parameter Estimates
 
+The simulated path was generated using the parameter values
+
+$$
+\theta = 3.0,\qquad
+\mu = 100.0,\qquad
+\sigma = 10.0.
+$$
+
+Applying MLE to the simulated path gives the following parameter estimates:
+
+| Parameter | True value | Estimated value |
+|:---|---:|---:|
+| $\theta$ | 3.0 | 2.862 |
+| $\mu$ | 100.0 | 99.98 |
+| $\sigma$ | 10.0 | 10.02 |
+
+The estimated parameters are close to the values used to generate the simulated path. In particular, $\hat{\mu}=99.98$ and $\hat{\sigma}=10.02$ are very close to their true values of $100$ and $10$, respectively, while $\hat{\theta}=2.862$ shows a slightly larger deviation from the true value of $3.0$. Overall, the results provide evidence that the MLE procedure is effective at recovering the parameters of the OU process from a simulated path.
