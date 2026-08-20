@@ -23,7 +23,7 @@ jupyter: python3
 
 In order to show that the OU process can be applied to pairs trading we will first construct a synthetic spread and then move to real life data. For real pairs, we first investigate a linear spread, given two asset price series. We then fit the OU model to the observed spread.
 
-## Constructing a Synthetic Spread
+## Backtest on Synthetic Spread
 
 Let us generate an OU process and treat it as if it were an observed spread.
 

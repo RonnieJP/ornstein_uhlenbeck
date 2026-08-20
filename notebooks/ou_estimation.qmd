@@ -155,6 +155,8 @@ The time step is $\Delta t=0.01$, so $\Delta t_i=0.01$ for all $i$, and the simu
 import numpy as np
 from scipy.optimize import minimize
 import ornstein_uhlenbeck.ou as ou
+import ornstein_uhlenbeck.utils as utils
+import plotly.graph_objects as go
 
 params = ou.OUParams(
     theta = 3.0,
@@ -172,25 +174,6 @@ rng = np.random.default_rng(42)
 t = ou.time_grid(dt, n_steps)
 path = ou.simulate_paths(x0, params, dt, n_steps, n_paths, rng)
 
-import plotly.graph_objects as go
-
-def apply_theme(fig):
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="#111A22",
-        plot_bgcolor="#111A22",
-        font=dict(size=16),
-        width=799,
-        height=500,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-        ),
-    )
-    return fig
 
 fig = go.Figure()
 
@@ -215,36 +198,24 @@ fig.update_layout(
     yaxis_title="State",
 )
 
-apply_theme(fig)
+utils.apply_theme(fig)
 fig.show()
 ```
 
 ```{python}
-def neg_log_likelihood(x,t,params):
-    p = ou.OUParams(
-        theta = params[0],
-        mu = params[1],
-        sigma = params[2]
-    )
-    dt = [t[i+1]-t[i] for i in range(0,len(t)-1)]
-
-    n = len(x)-1
-    ll = 0
-    
-    for i in range(n):
-        m = ou.conditional_mean(x[i],p, dt[i])
-        v = ou.conditional_variance(p, dt[i])
-        ll += -0.5*(np.log(2*np.pi*v) + (x[i+1]-m)**2/v)
-
-    return -ll
+from ornstein_uhlenbeck.estimation import estimate_parameters
 
 m = path.mean()
 
-initial_params = [100,m,50]
+initial_params = [100, m, 50]
 
-objective_func = lambda params : neg_log_likelihood(path,t,params)
-bound = [(0, None), (None, None), (0, None)]
-print(minimize(objective_func, initial_params, method = "Powell", bounds = bound))
+result = estimate_parameters(
+    path[:, 0],
+    t,
+    initial_params,
+)
+
+print(result)
 ```
 
 ## Parameter Estimates
