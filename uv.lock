@@ -1167,7 +1167,7 @@ requires-dist = [
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "pandas", specifier = ">=3.0.1" },
-    { name = "plotly", specifier = ">=6.9.0" },
+    { name = "plotly", specifier = "==7.0.0rc0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "yfinance", specifier = ">=1.6.0" },
@@ -1284,15 +1284,15 @@ wheels = [
 
 [[package]]
 name = "plotly"
-version = "6.9.0"
+version = "7.0.0rc0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "narwhals" },
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/96/07/795c79dbce40c39bece88e69d049babbd23ffa95b5d117f248db8ea03abb/plotly-6.9.0.tar.gz", hash = "sha256:967ad33e8c704fed051800d11d985eb206a9c795c14206b30a6f463ed9c67d0d", size = 6919903, upload-time = "2026-07-09T14:55:59.982Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/6d/5902918ae6fe19fdca273c03214531fba5cd875fb21ef42e7fdc15e004f9/plotly-7.0.0rc0.tar.gz", hash = "sha256:cb1b03bc2ebe840fb4540832467e5a86480eb9ee8a7aa46069668c554c341ddb", size = 6026684, upload-time = "2026-07-29T16:50:31.317Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/18/d8544811ab076f876c4892b3714f5b0dad335e1dc33aef826df431b8325d/plotly-6.9.0-py3-none-any.whl", hash = "sha256:36bebe2f1bb13884774fe61689c329071446f6ce4a8927fb1f0d6fb24f581236", size = 9909646, upload-time = "2026-07-09T14:55:55.421Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/7c/a7873b83872e3e2d27c61ae860ab29b8c78e82c6db13340cce479eedb7d3/plotly-7.0.0rc0-py3-none-any.whl", hash = "sha256:7cc7e4e2f797a8ee4e440dcb3c2b69d7570cab5a41cbf3e7417317daf66a3668", size = 8772157, upload-time = "2026-07-29T16:50:26.796Z" },
 ]
 
 [[package]]
