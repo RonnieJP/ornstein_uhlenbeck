@@ -4,7 +4,6 @@ author: "Rohan Jayanti, Yat Wai Heung"
 format:
   html:
     theme: superhero
-    embed-resources: true
     html-math-method: mathjax
     toc: true
     number-sections: true
@@ -93,6 +92,7 @@ The dashed line in the figure represents the long-run mean $\mu=100$.
 
 ```{python}
 import plotly.graph_objects as go
+import plotly.io
 
 fig = go.Figure()
 fig.add_trace(

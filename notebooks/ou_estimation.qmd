@@ -153,10 +153,10 @@ The time step is $\Delta t=0.01$, so $\Delta t_i=0.01$ for all $i$, and the simu
 
 ```{python}
 import numpy as np
-from scipy.optimize import minimize
 import ornstein_uhlenbeck.ou as ou
 import ornstein_uhlenbeck.utils as utils
 import plotly.graph_objects as go
+import plotly.io
 
 params = ou.OUParams(
     theta = 3.0,

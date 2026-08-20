@@ -33,6 +33,7 @@ Take $\theta = 2, \mu = 0, \sigma = 1$.
 import ornstein_uhlenbeck.ou as ou
 import numpy as np
 import plotly.graph_objects as go
+import plotly.io
 
 params = ou.OUParams(
     theta = 2.0,
