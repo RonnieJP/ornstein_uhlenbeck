@@ -91,7 +91,7 @@ A typical OU sample path should not move monotonically towards the mean. Instead
 
 The dashed line in the figure represents the long-run mean $\mu=100$.
 
-```{text}
+```{python}
 import plotly.graph_objects as go
 
 fig = go.Figure()
@@ -128,7 +128,7 @@ All paths begin at the same initial value. However, the independent Brownian sho
 
 This simulation of 15 paths is primarily qualitative. The larger set of 10,000 paths will be used later for the quantitative validation.
 
-```{text}
+```{python}
 fig = go.Figure()
 
 for i in range(paths_visual.shape[1]):
@@ -173,7 +173,7 @@ To validate this result numerically, the simulated paths are averaged across the
 
 We can observe tight fluctuations of the empirical mean around the theoretical mean, thus providing some validation of our simulation process.
 
-```{text}
+```{python}
 empirical_mean = paths_validation.mean(axis=1)
 theoretical = ou.theoretical_mean(t, x0, params)
 
@@ -229,7 +229,7 @@ $$
 
 The empirical variance obtained from the simulated paths is compared with the theoretical expression below. Close agreement between the two provides a numerical validation of the second-order behaviour of the OU simulation.
 
-```{text}
+```{python}
 empirical_variance = paths_validation.var(axis=1)
 theoretical = ou.theoretical_variance(t, params)
 
@@ -277,7 +277,7 @@ $$
 
 The terminal values of the simulated paths are compared with this theoretical stationary density.
 
-```{text}
+```{python}
 from scipy.stats import norm
 
 terminal = paths_validation[-1]
