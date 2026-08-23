@@ -206,7 +206,6 @@ print(initial_params)
 est = estimate_parameters(
     spread,
     t,
-    initial_params,
 )
 
 # plot_spread()
