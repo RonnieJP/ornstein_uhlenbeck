@@ -158,13 +158,7 @@ cumulative_pnl = np.cumsum(pnl)
 print(cumulative_pnl)
 ```
 
-For this strategy we will define the number of trades as one complete entry-to-exit cycle. So
-
-$$
-number of trades = \frac{number of entries and exits}{2},
-$$
-
-provided every trade is eventually closed.
+For this strategy we will define the number of trades as one complete entry-to-exit cycle.
 
 ```{python}
 trade_pnls = []
@@ -175,6 +169,24 @@ for i, position in enumerate(positions[:-1]):
     if not in_trade and position != 0:
         in_trade = True
         trade_pnl = pnl[i]
+
+    elif in_trade and position != 0:
+        trade_pnl = pnl[i]
+
+    elif in_trade and position == 0:
+        trade_pnls.append(trade_pnl)
+        in_trade = False
+        trade_pnl = 0.0
+
+number_of_trades = len(trade_pnls)
+winning_trades = sum(trade_pnl > 0 for trade_pnl in trade_pnls)
+if number_of_trades > 0:
+    win_rate = winning_trades / number_of_trades
+else: 
+    win_rate = 0.0
+
+print(f"Number of trades: {number_of_trades}")
+print(f"Win rate: {win_rate:.2%}")
 
 ```
 
