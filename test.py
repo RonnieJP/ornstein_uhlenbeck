@@ -1,8 +1,61 @@
-from ornstein_uhlenbeck import ou, utils, estimation
+import numpy as np
+from scipy.optimize import minimize
+import ornstein_uhlenbeck.ou as ou
 import pandas as pd
 import yfinance as yf
 import statsmodels.api as sm
-import numpy as np
+from statsmodels.tsa.ar_model import AutoReg, ar_select_order
+import datetime
+
+DEFAULT_BOUNDS = [
+    (0, None),
+    (None, None),
+    (0, None),
+]
+
+def neg_log_likelihood(
+    x: np.ndarray,
+    t: np.ndarray,
+    params: ou.OUParams,
+) -> float:
+    """Return the negative log likelihood of an OU path."""
+    dt = np.diff(t)
+
+    log_likelihood = 0.0
+
+    for i in range(len(x) - 1):
+        mean = ou.conditional_mean(x[i], params, dt[i])
+        variance = ou.conditional_variance(params, dt[i])
+
+        log_likelihood += -0.5 * (
+            np.log(2 * np.pi * variance) + (x[i + 1] - mean) ** 2 / variance
+        )
+
+    return -log_likelihood
+
+def estimate_parameters(
+    x: np.ndarray,
+    t: np.ndarray,
+    initial_params: list[float],
+    bounds: list[tuple[float | None, float | None]] = DEFAULT_BOUNDS,
+):
+    """Estimate OU parameters using maximum likelihood estimation."""
+
+    def objective(params):
+        ou_params = ou.OUParams(
+            theta=params[0],
+            mu=params[1],
+            sigma=params[2],
+        )
+
+        return neg_log_likelihood(x, t, ou_params)
+
+    return minimize(
+        objective,
+        initial_params,
+        method="Powell",
+        bounds=bounds,
+    )
 
 prices = yf.download(
     ["SHEL", "BP"],
@@ -10,17 +63,32 @@ prices = yf.download(
     auto_adjust=True,
 )["Close"]
 
-prices = prices[["SHEL", "BP"]].dropna()
+# dates = yf.download(
+#     ["SHEL", "BP"],
+#     period="5y",
+#     auto_adjust=True,
+# )["Date"]
 
 shel = prices["SHEL"].to_numpy()
 bp = prices["BP"].to_numpy()
+
 t = [i for i in range(len(bp))]
+
+#------------------- AR1 ------------------#
+def intial_estimators(x: np.ndarray,t: np.ndarray) -> list:
+    est_mu = x.mean()
+    mod = AutoReg(x,1)
+    res = mod.fit()
+    delta_t = 1
+    alpha, beta = res.params[0], res.params[1]
+    est_theta = - np.log(beta)/delta_t
+    epsilon = [x[i+1]- alpha - beta*x[i] for i in range(len(x) - 1)]
+    est_sigma = np.std(epsilon)
+    return [est_theta, est_mu, est_sigma]
 
 result = sm.OLS(shel, bp).fit()
 
-# print(result.summary())
-
-b = 1.9653
+b = result.params[0]
 
 spread = shel - b*bp
 logspread = np.log(shel) - b*np.log(bp)
@@ -123,43 +191,16 @@ def plot_correlation():
     utils.apply_theme(fig)
     fig.show()
 
-#                                  OLS Regression Results                                
-# =======================================================================================
-# Dep. Variable:                      y   R-squared (uncentered):                   0.990
-# Model:                            OLS   Adj. R-squared (uncentered):              0.990
-# Method:                 Least Squares   F-statistic:                          1.274e+05
-# Date:                Fri, 21 Aug 2026   Prob (F-statistic):                        0.00
-# Time:                        14:52:11   Log-Likelihood:                         -4025.3
-# No. Observations:                1255   AIC:                                      8053.
-# Df Residuals:                    1254   BIC:                                      8058.
-# Df Model:                           1                                                  
-# Covariance Type:            nonrobust                                                  
-# ==============================================================================
-#                  coef    std err          t      P>|t|      [0.025      0.975]
-# ------------------------------------------------------------------------------
-# x1             1.9653      0.006    356.877      0.000       1.955       1.976
-# ==============================================================================
-# Omnibus:                      263.334   Durbin-Watson:                   0.010
-# Prob(Omnibus):                  0.000   Jarque-Bera (JB):               52.667
-# Skew:                           0.073   Prob(JB):                     3.66e-12
-# Kurtosis:                       2.007   Cond. No.                         1.00
-# ==============================================================================
+m = spread.mean()
+initial_params = intial_estimators(spread, t)
+print(initial_params)
 
-# Notes:
-# [1] R² is computed without centering (uncentered) since the model does not contain a constant.
-# [2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-
-m = logspread.mean()
-initial_params = [30,m,1000]
-result = estimation.estimate_parameters(
-    logspread,
+est = estimate_parameters(
+    spread,
     t,
     initial_params,
 )
 
-print(result)
+#plot_spread()
 
-# fitted parmas: [ 3.498e+01 -1.969e-01  5.000e+01]
-# theta = 34.98
-# mu = -0.1969
-# sigma = 50
+print(est)
