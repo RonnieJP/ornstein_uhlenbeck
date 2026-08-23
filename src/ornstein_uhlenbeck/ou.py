@@ -120,6 +120,11 @@ def stationary_variance(params: OUParams) -> float:
     return params.sigma**2 / (2 * params.theta)
 
 
+def stationary_std(params: OUParams) -> float:
+    """Return the stationary standard deviation of an OU process."""
+    return params.sigma / np.sqrt(2 * params.theta)
+
+
 def half_life(params: OUParams) -> float:
     """Return the half-life of an OU process."""
     return np.log(2) / params.theta

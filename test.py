@@ -1,17 +1,16 @@
 import numpy as np
 from scipy.optimize import minimize
 import ornstein_uhlenbeck.ou as ou
-import pandas as pd
 import yfinance as yf
 import statsmodels.api as sm
-from statsmodels.tsa.ar_model import AutoReg, ar_select_order
-import datetime
+from statsmodels.tsa.ar_model import AutoReg
 
 DEFAULT_BOUNDS = [
     (0, None),
     (None, None),
     (0, None),
 ]
+
 
 def neg_log_likelihood(
     x: np.ndarray,
@@ -32,6 +31,7 @@ def neg_log_likelihood(
         )
 
     return -log_likelihood
+
 
 def estimate_parameters(
     x: np.ndarray,
@@ -57,6 +57,7 @@ def estimate_parameters(
         bounds=bounds,
     )
 
+
 prices = yf.download(
     ["SHEL", "BP"],
     period="5y",
@@ -74,25 +75,28 @@ bp = prices["BP"].to_numpy()
 
 t = [i for i in range(len(bp))]
 
-#------------------- AR1 ------------------#
-def intial_estimators(x: np.ndarray,t: np.ndarray) -> list:
+
+# ------------------- AR1 ------------------#
+def intial_estimators(x: np.ndarray, t: np.ndarray) -> list:
     est_mu = x.mean()
-    mod = AutoReg(x,1)
+    mod = AutoReg(x, 1)
     res = mod.fit()
     delta_t = 1
     alpha, beta = res.params[0], res.params[1]
-    est_theta = - np.log(beta)/delta_t
-    epsilon = [x[i+1]- alpha - beta*x[i] for i in range(len(x) - 1)]
+    est_theta = -np.log(beta) / delta_t
+    epsilon = [x[i + 1] - alpha - beta * x[i] for i in range(len(x) - 1)]
     est_sigma = np.std(epsilon)
     return [est_theta, est_mu, est_sigma]
+
 
 result = sm.OLS(shel, bp).fit()
 
 b = result.params[0]
 
-spread = shel - b*bp
-logspread = np.log(shel) - b*np.log(bp)
+spread = shel - b * bp
+logspread = np.log(shel) - b * np.log(bp)
 import plotly.graph_objects as go
+
 
 def plot_prices():
     fig = go.Figure()
@@ -123,14 +127,15 @@ def plot_prices():
     utils.apply_theme(fig)
     fig.show()
 
+
 def plot_spread():
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x = t,
-            y = spread,
-            mode = "lines",
-            name = "Spread",
+            x=t,
+            y=spread,
+            mode="lines",
+            name="Spread",
         )
     )
 
@@ -143,14 +148,15 @@ def plot_spread():
     utils.apply_theme(fig)
     fig.show()
 
+
 def plot_logspread():
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x = t,
-            y = logspread,
-            mode = "lines",
-            name = "Log Spread",
+            x=t,
+            y=logspread,
+            mode="lines",
+            name="Log Spread",
         )
     )
 
@@ -163,22 +169,23 @@ def plot_logspread():
     utils.apply_theme(fig)
     fig.show()
 
+
 def plot_correlation():
     fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
-            x = bp,
-            y = shel,
-            mode = "markers",
+            x=bp,
+            y=shel,
+            mode="markers",
         )
     )
 
     fig.add_trace(
         go.Scatter(
-            x = bp,
-            y = b*bp,
-            mode = "lines",
+            x=bp,
+            y=b * bp,
+            mode="lines",
         )
     )
 
@@ -191,6 +198,7 @@ def plot_correlation():
     utils.apply_theme(fig)
     fig.show()
 
+
 m = spread.mean()
 initial_params = intial_estimators(spread, t)
 print(initial_params)
@@ -201,6 +209,6 @@ est = estimate_parameters(
     initial_params,
 )
 
-#plot_spread()
+# plot_spread()
 
 print(est)

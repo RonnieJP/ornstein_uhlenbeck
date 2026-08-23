@@ -31,6 +31,8 @@ Take $\theta = 2, \mu = 0, \sigma = 1$.
 
 ```{python}
 import ornstein_uhlenbeck.ou as ou
+from ornstein_uhlenbeck.estimation import estimate_parameters
+import ornstein_uhlenbeck.utils as utils
 import numpy as np
 import plotly.graph_objects as go
 import plotly.io
@@ -43,31 +45,13 @@ params = ou.OUParams(
 
 x0 = 0.0
 dt = 0.01
-n_steps = 1000
+n_steps = 20000
 n_paths = 1
 
 rng = np.random.default_rng(42)
 
 t = ou.time_grid(dt, n_steps)
 path = ou.simulate_paths(x0, params, dt, n_steps, n_paths, rng)
-
-def apply_theme(fig):
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="#111A22",
-        plot_bgcolor="#111A22",
-        font=dict(size=16),
-        width=799,
-        height=500,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-        ),
-    )
-    return fig
 
 fig = go.Figure()
 fig.add_trace(
@@ -91,27 +75,22 @@ fig.update_layout(
     yaxis_title = "State"
 )
 
-apply_theme(fig)
+utils.apply_theme(fig)
 fig.show()
 ```
+
 We will now devise a trading rule. For the synthetic spread, we will define a standard threshold strategy based on deviations from the long-run mean.
 
-Since
+In the stationary regime, the OU process has distribution
 
 $$
-S_t\sim\mathcal{N}(\mu,\frac{\sigma^2}{2\theta})
+S_t\sim\mathcal{N}(\mu,\frac{\sigma^2}{2\theta}).
 $$
 
-in stationarity, the stationary standard deviation is
+Thus in stationarity, the stationary standard deviation is
 
 $$
 \sigma_S=\frac{\sigma}{\sqrt{2\theta}}.
-$$
-
-For our parameters,
-
-$$
-\sigma_S=\frac{1}{\sqrt{4}}=0.5.
 $$
 
 Define thresholds in terms of stationary standard deviations as follows:
@@ -120,12 +99,84 @@ Define thresholds in terms of stationary standard deviations as follows:
 - Short spread if $S_t\gt\mu+2\sigma_S$
 - Exit when $S_t$ returns to $\mu$
 
-With our parameters that is:
+We use the first 75% of the synthetic OU process as training data to estimate the parameters and will subsequently trade the strategy on the remaining 25% to avoid look-ahead bias.
 
-- Long spread if $S_t\lt-1$
-- Short spread if $S_t\gt1$
-- Close position when $S_t=0$
+```{python}
+split_index = int(0.75 * len(path))
 
+train = path[:split_index]
+test = path[split_index - 1:]
+
+t_train = t[:split_index]
+t_test = t[split_index - 1:]
+
+# REMOVE LATER ONCE INITIAL_PARAMS IS BUILT INTO ESTIMATE_PARAMETERS
+
+m = train.mean()
+
+initial_params = [5, m, 5]
+
+result = estimate_parameters(train[:, 0], t_train, initial_params)
+
+estimated_params = ou.OUParams(
+    theta=result.x[0],
+    mu=result.x[1],
+    sigma=result.x[2],
+)
+
+print(estimated_params)
+
+stationary_std = ou.stationary_std(estimated_params)
+upper_threshold = estimated_params.mu + 2 * stationary_std
+lower_threshold = estimated_params.mu - 2 * stationary_std
+
+positions = np.zeros(len(test))
+position = 0
+
+for i, spread in enumerate(test[:, 0]):
+    if position == 0:
+        if spread < lower_threshold:
+            position = 1
+        elif spread > upper_threshold:
+            position = -1
+
+    elif position == 1:
+        if spread >= estimated_params.mu:
+            position = 0
+
+    elif position == -1:
+        if spread <= estimated_params.mu:
+            position = 0
+
+    positions[i] = position
+
+spread = test[:, 0]
+
+pnl = positions[:-1] * np.diff(spread)
+cumulative_pnl = np.cumsum(pnl)
+
+print(cumulative_pnl)
+```
+
+For this strategy we will define the number of trades as one complete entry-to-exit cycle. So
+
+$$
+number of trades = \frac{number of entries and exits}{2},
+$$
+
+provided every trade is eventually closed.
+
+```{python}
+trade_pnls = []
+in_trade = False
+trade_pnl = 0.0
+
+for i, position in enumerate(positions[:-1]):
+    if not in_trade and position != 0:
+        in_trade = True
+        trade_pnl = pnl[i]
+
+```
 
 ```{python}
 import yfinance as yf
