@@ -31,20 +31,18 @@ def neg_log_likelihood(
     return -log_likelihood
 
 
-def AR1_intial_estimators(
-        x: np.ndarray
-) -> list:
-    AR1_model = AutoReg(x,1)
+def AR1_intial_estimators(x: np.ndarray) -> list:
+    AR1_model = AutoReg(x, 1)
     AR1_result = AR1_model.fit()
 
     delta_t = 1
 
     alpha, beta = AR1_result.params[0], AR1_result.params[1]
-    
-    epsilon = [x[i+1]- alpha - beta*x[i] for i in range(len(x) - 1)]
+
+    epsilon = [x[i + 1] - alpha - beta * x[i] for i in range(len(x) - 1)]
 
     est_mu = x.mean()
-    est_theta = - np.log(beta)/delta_t
+    est_theta = -np.log(beta) / delta_t
     est_sigma = np.std(epsilon)
 
     return [est_theta, est_mu, est_sigma]

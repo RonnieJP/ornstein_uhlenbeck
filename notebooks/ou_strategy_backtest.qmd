@@ -116,7 +116,7 @@ m = train.mean()
 
 initial_params = [5, m, 5]
 
-result = estimate_parameters(train[:, 0], t_train, initial_params)
+result = estimate_parameters(train[:, 0], t_train)
 
 estimated_params = ou.OUParams(
     theta=result.x[0],
@@ -187,6 +187,7 @@ else:
 
 print(f"Number of trades: {number_of_trades}")
 print(f"Win rate: {win_rate:.2%}")
+
 
 ```
 
