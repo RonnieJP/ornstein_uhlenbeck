@@ -205,14 +205,9 @@ fig.show()
 ```{python}
 from ornstein_uhlenbeck.estimation import estimate_parameters
 
-m = path.mean()
-
-initial_params = [100, m, 50]
-
 result = estimate_parameters(
     path[:, 0],
     t,
-    initial_params,
 )
 
 print(result)
@@ -228,6 +223,7 @@ $$
 \sigma = 10.0.
 $$
 
+An AR(1) model is used to obtain an array of initial guesstimations of the parameters, which was fed into the MLE model.
 Applying MLE to the simulated path gives the following parameter estimates:
 
 | Parameter | True value | Estimated value |
@@ -236,4 +232,4 @@ Applying MLE to the simulated path gives the following parameter estimates:
 | $\mu$ | 100.0 | 99.98 |
 | $\sigma$ | 10.0 | 10.02 |
 
-The estimated parameters are close to the values used to generate the simulated path. In particular, $\hat{\mu}=99.98$ and $\hat{\sigma}=10.02$ are very close to their true values of $100$ and $10$, respectively, while $\hat{\theta}=2.862$ shows a slightly larger deviation from the true value of $3.0$. Overall, the results provide evidence that the MLE procedure is effective at recovering the parameters of the OU process from a simulated path.
+The estimated parameters are close to the values used to generate the simulated path. In particular, $\hat{\mu}=99.98$ and $\hat{\sigma}=10.02$ are very close to their true values of $100$ and $10$, respectively, while $\hat{\theta}=2.862$ shows a larger deviation from the true value of $3.0$. Overall, the results provide evidence that the MLE procedure is effective at recovering the parameters of the OU process from a simulated path.
