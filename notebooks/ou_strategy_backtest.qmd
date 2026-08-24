@@ -240,7 +240,7 @@ fig.add_trace(
 fig.update_layout(
     title = "Synthetic Strategy Drawdown",
     xaxis_title = "Time",
-    yaxis_title = "Cumulative Drawdown"
+    yaxis_title = "Drawdown"
 )
 
 utils.apply_theme(fig)
