@@ -211,3 +211,8 @@ est = estimate_parameters(
 # plot_spread()
 
 print(est)
+
+# Sharpe Ratio calculation
+# find return series
+sharpe = pnl.mean() / pnl.std(ddof = 1) * np.sqrt(252)
+time_in_position = sum(pos != 0 for pos in positions)/len(positions)

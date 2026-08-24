@@ -110,12 +110,6 @@ test = path[split_index - 1:]
 t_train = t[:split_index]
 t_test = t[split_index - 1:]
 
-# REMOVE LATER ONCE INITIAL_PARAMS IS BUILT INTO ESTIMATE_PARAMETERS
-
-m = train.mean()
-
-initial_params = [5, m, 5]
-
 result = estimate_parameters(train[:, 0], t_train)
 
 estimated_params = ou.OUParams(
@@ -185,6 +179,7 @@ for i, position in enumerate(positions[:-1]):
 
 number_of_trades = len(trade_pnls)
 average_trade_pnl = np.mean(trade_pnls)
+std_trade_pnl = np.std(trade_pnls)
 
 winning_trades = sum(trade_pnl > 0 for trade_pnl in trade_pnls)
 
@@ -193,13 +188,18 @@ if number_of_trades > 0:
 else:
     win_rate = 0.0
 
+sharpe = average_trade_pnl / std_trade_pnl * np.sqrt(252)
+time_in_position = sum(pos != 0 for pos in positions)/len(positions)
 
 print(f"Number of trades: {number_of_trades}")
+print(f"Percentage time in position: {time_in_position*100}%")
 print(f"Average PnL per trade: {average_trade_pnl}")
 print(f"Win rate: {win_rate:.2%}")
+print(f"Sharpe ratio: {sharpe:.2%}")
 ```
 
 Note that for the win rate here, only completed trades are included.
+There is no meaningful risk-free rate for synthetic data hence we took it as zero
 
 ```{python}
 fig = go.Figure()
