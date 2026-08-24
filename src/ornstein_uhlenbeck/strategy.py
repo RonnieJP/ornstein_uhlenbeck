@@ -1,108 +1,124 @@
 import numpy as np
-from ornstein_uhlenbeck.estimation import estimate_parameters
-import ornstein_uhlenbeck.ou as ou
 import statsmodels.api as sm
 
+import ornstein_uhlenbeck.ou as ou
 
-def OLS_factor(p1: np.ndarray, p2: np.ndarray):
-    result = sm.OLS(p1, p2).fit()
-    return result.params[0]
 
-def pnl(
-    x: np.ndarray, 
-    t: np.ndarray
-):
-    split_index = int(0.75 * len(x))
+def upper_threshold(params):
+    return params.mu + 2 * ou.stationary_std(params)
 
-    train = x[:split_index]
-    test = x[split_index - 1:]
 
-    t_train = t[:split_index]
-    t_test = t[split_index - 1:]
+def lower_threshold(params):
+    return params.mu - 2 * ou.stationary_std(params)
 
-    result = estimate_parameters(train, t_train)
 
-    estimated_params = ou.OUParams(
-        theta=result.x[0],
-        mu=result.x[1],
-        sigma=result.x[2],
-    )
-
-    print(estimated_params)
-
-    stationary_std = ou.stationary_std(estimated_params)
-    upper_threshold = estimated_params.mu + 2 * stationary_std
-    lower_threshold = estimated_params.mu - 2 * stationary_std
-
-    positions = np.zeros(len(test))
+def gen_positions(x, params):
+    positions = np.zeros(len(x))
     position = 0
 
-    for i, spread in enumerate(test):
+    for i, spread in enumerate(x[:, 0]):
         if position == 0:
-            if spread < lower_threshold:
+            if spread < lower_threshold(params):
                 position = 1
-            elif spread > upper_threshold:
+            elif spread > upper_threshold(params):
                 position = -1
 
         elif position == 1:
-            if spread >= estimated_params.mu:
+            if spread >= params.mu:
                 position = 0
 
         elif position == -1:
-            if spread <= estimated_params.mu:
+            if spread <= params.mu:
                 position = 0
 
         positions[i] = position
 
-    spread = test
+    return positions
 
-    pnl = positions[:-1] * np.diff(spread)
-    return pnl, positions
 
-def final_pnl(pnl):
-    cumulative_pnl = np.cumsum(pnl)
-    fin_pnl = cumulative_pnl[-1]
-    return fin_pnl
+def gen_pnl(x, params):
+    spread = x[:, 0]
+    positions = gen_positions(x, params)
+    return positions[:-1] * np.diff(spread)
 
-def trade_pnls(pnl, positions):
+
+def gen_cum_pnl(x, params):
+    pnl = gen_pnl(x, params)
+    return np.cumsum(pnl)
+
+
+def gen_final_pnl(x, params):
+    return gen_cum_pnl(x, params)[-1]
+
+
+def gen_trade_pnls(x, params):
     trade_pnls = []
     in_trade = False
     trade_pnl = 0.0
 
-    for i, position in enumerate(positions[:-1]):
+    positions = gen_positions(x, params)
+    pnl = gen_pnl(x, params)
 
+    for i, position in enumerate(positions[:-1]):
         if not in_trade and position != 0:
-            # Enter trade
             in_trade = True
             trade_pnl = pnl[i]
 
         elif in_trade and position != 0:
-            # Continue holding
             trade_pnl += pnl[i]
 
         elif in_trade and position == 0:
-            # Exit trade
             trade_pnls.append(trade_pnl)
             in_trade = False
             trade_pnl = 0.0
 
     return trade_pnls
 
-def number_of_trades(trade_pnls):
+
+def num_trades(x, params):
+    trade_pnls = gen_trade_pnls(x, params)
     return len(trade_pnls)
 
-def average_trade_pnl(trade_pnls):
-    return np.mean(trade_pnls)
 
-def win_rate(trade_pnls,number_of_trades):
-    winning_trades = sum(trade_pnl > 0 for trade_pnl in trade_pnls)
-    if number_of_trades > 0:
-        win_rate = winning_trades / number_of_trades
+def avg_trade_pnl(x, params):
+    trade_pnls = gen_trade_pnls(x, params)
+
+    if len(trade_pnls) > 0:
+        return np.mean(trade_pnls)
     else:
-        win_rate = 0.0
+        return 0.0
+
+
+def winrate(x, params):
+    trade_pnls = gen_trade_pnls(x, params)
+    n_trades = num_trades(x, params)
+    winning_trades = sum(trade_pnl > 0 for trade_pnl in trade_pnls)
+
+    if n_trades > 0:
+        win_rate = winning_trades / n_trades
+    else:
+        win_rate = 0
+
     return win_rate
 
-def sharpe(trade_pnls, average_trade_pnl):
-    std_trade_pnl = np.std(trade_pnls)
-    sharpe = average_trade_pnl / std_trade_pnl
-    return sharpe
+
+def sharpe_ratio(x, params):
+    pnl = gen_pnl(x, params)
+    return np.mean(pnl) / np.std(pnl, ddof=1)
+
+
+def drawdown(x, params):
+    cumulative_pnl = gen_cum_pnl(x, params)
+    running_max = np.maximum.accumulate(cumulative_pnl)
+    return cumulative_pnl - running_max
+
+
+def max_drawdown(x, params):
+    return drawdown(x, params).min()
+
+
+def estimate_hedge_parameters(p1: np.ndarray, p2: np.ndarray):
+    X = sm.add_constant(p2)
+    result = sm.OLS(p1, X).fit()
+
+    return result.params[0], result.params[1]

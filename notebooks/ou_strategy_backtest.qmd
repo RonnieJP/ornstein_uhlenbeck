@@ -18,25 +18,34 @@ execute:
 jupyter: python3
 ---
 
+In order to show how the Ornstein-Uhlenbeck (OU) process can be applied to pairs trading, we first conduct a backtest on a synthetic spread generated directly from an OU process. This allows the performance of the trading strategy to be evaluated in a controlled manner where the true parameters of the underlying process are known.
 
-# Ornstein Uhlenbeck Spread Backtest 
-
-In order to show that the OU process can be applied to pairs trading we will first construct a synthetic spread and then move to real life data. For real pairs, we first investigate a linear spread, given two asset price series. We then fit the OU model to the observed spread.
+We will then apply the same methodology to real asset-price data. For the real backtest we will first construct a linear spread from two asset price series and then fit an OU model to the observed spread.
 
 ## Backtest on Synthetic Spread
 
-Let us generate an OU process and treat it as if it were an observed spread.
+We begin by generating a single OU sample path and treating it as if it were an observed spread.
 
-Take $\theta = 2, \mu = 0, \sigma = 1$.
+Take
+
+$$
+\theta = 2,\qquad \mu = 0,\qquad \sigma = 1.
+$$
 
 ```{python}
-import ornstein_uhlenbeck.ou as ou
-from ornstein_uhlenbeck.estimation import estimate_parameters
-import ornstein_uhlenbeck.utils as utils
 import numpy as np
 import plotly.graph_objects as go
 import plotly.io
 
+import ornstein_uhlenbeck.ou as ou
+import ornstein_uhlenbeck.strategy as strategy
+import ornstein_uhlenbeck.utils as utils
+from ornstein_uhlenbeck.estimation import estimate_parameters
+```
+
+We first simulate a single OU path using the parameters above.
+
+```{python}
 params = ou.OUParams(
     theta = 2.0,
     mu = 0.0,
@@ -66,11 +75,11 @@ fig.add_trace(
 fig.add_hline(
     y = params.mu,
     line_dash = "dash",
-    annotation_text = "Long-run mean",
+    annotation_text = "Actual Long-run Mean",
 )
 
 fig.update_layout(
-    title = "Single Ornstein-Uhlenbeck sample path",
+    title = "Single Ornstein-Uhlenbeck Sample Path",
     xaxis_title = "Time",
     yaxis_title = "State"
 )
@@ -79,27 +88,43 @@ utils.apply_theme(fig)
 fig.show()
 ```
 
-We will now devise a trading rule. For the synthetic spread, we will define a standard threshold strategy based on deviations from the long-run mean.
+We will now devise a trading rule. We will use a standard threshold strategy based on deviations from the long-run mean.
 
 In the stationary regime, the OU process has distribution
 
 $$
-S_t\sim\mathcal{N}(\mu,\frac{\sigma^2}{2\theta}).
+S_t\sim\mathcal{N}\left(\mu,\frac{\sigma^2}{2\theta}\right).
 $$
 
-Thus in stationarity, the stationary standard deviation is
+Thus the stationary standard deviation is
 
 $$
 \sigma_S=\frac{\sigma}{\sqrt{2\theta}}.
 $$
 
-Define thresholds in terms of stationary standard deviations as follows:
+For the simulated process, the simulated distribution is determined by the true parameters. In the backtest, however, the trading strategy does not have access to these parameters. It therefore uses their estimates obtained exclusively from the training period.
 
-- Long spread if $S_t\lt\mu-2\sigma_S$
-- Short spread if $S_t\gt\mu+2\sigma_S$
-- Exit when $S_t$ returns to $\mu$
+We define the trading thresholds as two estimated stationary standard deviations from the estimated long-run mean:
 
-We use the first 75% of the synthetic OU process as training data to estimate the parameters and will subsequently trade the strategy on the remaining 25% to avoid look-ahead bias.
+- Long spread if $S_t\lt\hat{\mu}-2\hat{\sigma}_S$
+- Short spread if $S_t\gt\hat{\mu}+2\hat{\sigma}_S$
+- Exit the position when $S_t$ returns to $\hat{\mu}$
+
+We also define the estimated stationary standard deviation:
+
+$$
+\hat{\sigma}_S
+=
+\frac{\hat{\sigma}}{\sqrt{2\hat{\theta}}}.
+$$
+
+This is a mean-reversion strategy: a sufficiently negative deviation from the estimated mean is taken as an opportunity to take a long position, while a sufficiently positive deviation is interpreted as an opportunity to take a short position.
+
+### Training and Test Data
+
+To avoid look-ahead bias, the synthetic path is divided into a training period and a test period. The first 75% of observations are used to estimate the OU parameters. These estimates are then treated as fixed when generating trading signals on the remaining 25% of the path.
+
+The final observation of the training period is also included as the first observation of the test period. This provides the starting spread value from which the first test-period position can be evaluated, without using any future test-period observations when estimating the parameters.
 
 ```{python}
 split_index = int(0.75 * len(path))
@@ -110,97 +135,115 @@ test = path[split_index - 1:]
 t_train = t[:split_index]
 t_test = t[split_index - 1:]
 
-result = estimate_parameters(train, t_train)
+estimated_params = estimate_parameters(train, t_train)
 
-estimated_params = ou.OUParams(
-    theta=result.x[0],
-    mu=result.x[1],
-    sigma=result.x[2],
-)
-
-print(estimated_params)
-
-stationary_std = ou.stationary_std(estimated_params)
-upper_threshold = estimated_params.mu + 2 * stationary_std
-lower_threshold = estimated_params.mu - 2 * stationary_std
-
-positions = np.zeros(len(test))
-position = 0
-
-for i, spread in enumerate(test[:, 0]):
-    if position == 0:
-        if spread < lower_threshold:
-            position = 1
-        elif spread > upper_threshold:
-            position = -1
-
-    elif position == 1:
-        if spread >= estimated_params.mu:
-            position = 0
-
-    elif position == -1:
-        if spread <= estimated_params.mu:
-            position = 0
-
-    positions[i] = position
-
-spread = test[:, 0]
-
-pnl = positions[:-1] * np.diff(spread)
-cumulative_pnl = np.cumsum(pnl)
-final_pnl = cumulative_pnl[-1]
-
-print(final_pnl)
+print(f"True parameters: {params}")
+print(f"Estimated parameters: {estimated_params}")
 ```
 
-For this strategy we will define the number of trades as one complete entry-to-exit cycle.
+The parameter estimates can be compared with the known parameters used to generate the synthetic process.
+
+| Parameter | True value | Estimated value |
+|:---|---:|---:|
+| $\theta$ | 2.00 | 1.8363 |
+| $\mu$ | 0.00 | -0.0290 |
+| $\sigma$ | 1.00 | 0.9909 |
+
+The estimated parameters can then be used to determine the estimated stationary standard deviation and the corresponding entry thresholds for the out-of-sample test period.
 
 ```{python}
-trade_pnls = []
-in_trade = False
-trade_pnl = 0.0
+stationary_std = ou.stationary_std(estimated_params)
 
-for i, position in enumerate(positions[:-1]):
+upper_threshold = strategy.upper_threshold(estimated_params)
+lower_threshold = strategy.lower_threshold(estimated_params)
 
-    if not in_trade and position != 0:
-        # Enter trade
-        in_trade = True
-        trade_pnl = pnl[i]
-
-    elif in_trade and position != 0:
-        # Continue holding
-        trade_pnl += pnl[i]
-
-    elif in_trade and position == 0:
-        # Exit trade
-        trade_pnls.append(trade_pnl)
-        in_trade = False
-        trade_pnl = 0.0
-
-number_of_trades = len(trade_pnls)
-average_trade_pnl = np.mean(trade_pnls)
-std_trade_pnl = np.std(trade_pnls)
-
-winning_trades = sum(trade_pnl > 0 for trade_pnl in trade_pnls)
-
-if number_of_trades > 0:
-    win_rate = winning_trades / number_of_trades
-else:
-    win_rate = 0.0
-
-sharpe = average_trade_pnl / std_trade_pnl
-
-print(f"Number of trades: {number_of_trades}")
-print(f"Average PnL per trade: {average_trade_pnl:.2f}")
-print(f"Win rate: {win_rate:.2%}")
-print(f"Sharpe ratio: {sharpe:.2f}")
+print(f"Estimated stationary standard deviation: {stationary_std:.4f}")
+print(f"Lower threshold: {lower_threshold:.4f}")
+print(f"Upper threshold: {upper_threshold:.4f}")
 ```
 
-Note that for the win rate here, only completed trades are included.
-There is no meaningful risk-free rate for trading with synthetic data hence we took it as zero.
+We then generate the trading positions from the test-period spread using the estimated parameters. The position takes values in $\{-1,0,1\}$, corresponding to a short position, no position, and a long position respectively.
+
+```{python}
+positions = strategy.gen_positions(test, estimated_params)
+pnl = strategy.gen_pnl(test, estimated_params)
+cumulative_pnl = strategy.gen_cum_pnl(test, estimated_params)
+final_pnl = strategy.gen_final_pnl(test, estimated_params)
+
+print(f"Final PnL: {final_pnl:.2f}")
+```
+
+The PnL is calculated from the position held during each interval and the subsequent change in the spread:
+
+$$
+\mathrm{PnL}_i = P_i(S_{i+1}-S_{i}).
+$$
+
+Consequently, the position determined from observation $i$ is used to capture the movement from $i$ to $i+1$. This avoids using the future value $S_{i+1}$ when determining the position at time $i$ and therefore avoids look-ahead bias.
+
+### Trade-Level Evaluation
+
+For the purpose of trade-level statistics, we define a trade as one complete entry-to-exit cycle. A trade therefore begins when a zero position becomes non-zero and ends when that position subsequently returns to zero.
+
+```{python}
+number_of_trades = strategy.num_trades(test, estimated_params)
+average_trade_pnl = strategy.avg_trade_pnl(test, estimated_params)
+win_rate = strategy.winrate(test, estimated_params)
+
+print(f"Number of trades: {number_of_trades}")
+print(f"Average PnL per trade: {average_trade_pnl:.4f}")
+print(f"Win rate: {win_rate:.2%}")
+```
+
+The win rate is calculated using completed trades only. This means that a trade which remains open at the end of the test period is not counted when calculating the win rate or the number of completed trades.
+
+However, this distinction does not apply to the overall PnL calculation. If a position remains open at the end of the test period, the PnL generated while that position was held is still included in the overall PnL. In other words, the backtest does not artificially close an incomplete final trade merely to classify it as a completed trade at the end of the test period. This means that the final PnL represents the mark-to-market PnL of the strategy over the entire test period.
+
+### Risk and Performance Evaluation
+
+The Sharpe ratio is calculated from the full PnL series rather than from individual completed trade PnLs. This is important because the PnL series contains the PnL generated at each time step, including periods where the strategy is not holding a position.
+
+For the synthetic backtest we take the risk-free rate to be zero. We therefore use the following PnL-based Sharpe ratio:
+
+$$
+\mathrm{Sharpe}_{\mathrm{PnL}}
+=
+\frac{\overline{\mathrm{PnL}}}
+{s_{\mathrm{PnL}}}.
+$$
+
+```{python}
+sharpe_ratio = strategy.sharpe_ratio(test, estimated_params)
+
+print(f"Sharpe ratio: {sharpe_ratio:.4f}")
+```
+
+We also examine the cumulative PnL and drawdown of the strategy. Cumulative PnL is obtained by summing the incremental PnL through time:
+
+$$
+C_t = \sum_{i=1}^{t}\mathrm{PnL}_i.
+$$
+
+Drawdown measures the distance of the cumulative PnL below its historical maximum:
+
+$$
+D_t = C_t - \max_{s\leq t} C_s.
+$$
+
+The maximum drawdown is the minimum value of this series.
+
+```{python}
+drawdown = strategy.drawdown(test, estimated_params)
+max_drawdown = strategy.max_drawdown(test, estimated_params)
+
+print(f"Maximum drawdown: {max_drawdown:.4f}")
+```
+
+We plot the cumulative PnL to show how the strategy's performance develops through the test period.
 
 ```{python}
 fig = go.Figure()
+
 fig.add_trace(
     go.Scatter(
         x = t_test[1:],
@@ -218,19 +261,18 @@ fig.update_layout(
 
 utils.apply_theme(fig)
 fig.show()
+```
 
-running_max = np.maximum.accumulate(cumulative_pnl)
-drawdown = cumulative_pnl - running_max
-max_drawdown = drawdown.min()
+The drawdown series provides a complementary view of the strategy's risk by showing the extent to which cumulative PnL falls below its previous high-water mark.
 
-print(f"Maximum Drawdown: {max_drawdown}")
-
+```{python}
 fig = go.Figure()
+
 fig.add_trace(
     go.Scatter(
         x = t_test[1:],
         y = drawdown,
-        name = "Synthetic Drawdown Accumulation",
+        name = "Synthetic Drawdown",
         mode = "lines",
     )
 )
@@ -251,89 +293,89 @@ We have obtained data from two correlated oil stocks, SHEL and BP, where said co
 We acquire the factor $b$ which describes the relationship between the two stocks.
 
 ```{python}
-import yfinance as yf
-import ornstein_uhlenbeck.strategy as strategy
-
-prices = yf.download(
-    ["SHEL", "BP"],
-    period="5y",
-    auto_adjust=True,
-)["Close"]
-
-shel = prices["SHEL"].dropna().to_numpy()
-bp = prices["BP"].dropna().to_numpy()
-
-t = [i for i in range(len(bp))]
-
-b = strategy.OLS_factor(shel,bp)
-
-spread = shel - b * bp
-
-fig = go.Figure()
-fig.add_trace(
-    go.Scatter(
-        x=t,
-        y=bp,
-        mode="lines",
-        name="BP",
-    )
-)
-
-fig.add_trace(
-    go.Scatter(
-        x=t,
-        y=shel,
-        mode="lines",
-        name="SHEL",
-    )
-)
-
-fig.update_layout(
-    title="Stock Prices",
-    xaxis_title="Trading Days from 24 Aug 2021",
-    yaxis_title="Prices",
-)
-
-utils.apply_theme(fig)
-fig.show()
-
-fig = go.Figure()
-fig.add_trace(
-    go.Scatter(
-        x=t,
-        y=spread,
-        mode="lines",
-        name="Spread",
-    )
-)
-
-fig.update_layout(
-    title="Spread",
-    xaxis_title="Trading Days from 21 Aug 2021",
-    yaxis_title="Spread",
-)
-
-utils.apply_theme(fig)
-fig.show()
-
-print(f"b: {b:.2f}")
+# import yfinance as yf
+# import ornstein_uhlenbeck.strategy as strategy
+# 
+# prices = yf.download(
+    # ["SHEL", "BP"],
+    # period="5y",
+    # auto_adjust=True,
+# )["Close"]
+# 
+# shel = prices["SHEL"].dropna().to_numpy()
+# bp = prices["BP"].dropna().to_numpy()
+# 
+# t = [i for i in range(len(bp))]
+# 
+# b = strategy.estimate_hedge_parameters(shel,bp)
+# 
+# spread = shel - b * bp
+# 
+# fig = go.Figure()
+# fig.add_trace(
+    # go.Scatter(
+        # x=t,
+        # y=bp,
+        # mode="lines",
+        # name="BP",
+    # )
+# )
+# 
+# fig.add_trace(
+    # go.Scatter(
+        # x=t,
+        # y=shel,
+        # mode="lines",
+        # name="SHEL",
+    # )
+# )
+# 
+# fig.update_layout(
+    # title="Stock Prices",
+    # xaxis_title="Trading Days from 24 Aug 2021",
+    # yaxis_title="Prices",
+# )
+# 
+# utils.apply_theme(fig)
+# fig.show()
+# 
+# fig = go.Figure()
+# fig.add_trace(
+    # go.Scatter(
+        # x=t,
+        # y=spread,
+        # mode="lines",
+        # name="Spread",
+    # )
+# )
+# 
+# fig.update_layout(
+    # title="Spread",
+    # xaxis_title="Trading Days from 21 Aug 2021",
+    # yaxis_title="Spread",
+# )
+# 
+# utils.apply_theme(fig)
+# fig.show()
+# 
+# print(f"b: {b:.2f}")
 ```
 
 To estimate the returns on real financial data, we refactored and employed the identical strategy.
 
 ```{python}
-pnl, positions = strategy.pnl(spread, t)
-final_pnl = strategy.final_pnl(pnl)
-trade_pnls = strategy.trade_pnls(pnl, positions)
-
-number_of_trades = strategy.number_of_trades(trade_pnls)
-average_trade_pnl = strategy.average_trade_pnl(trade_pnls)
-win_rate = strategy.win_rate(trade_pnls, number_of_trades)
-sharpe = strategy.sharpe(trade_pnls, average_trade_pnl)
-
-print(f"Number of trades: {number_of_trades}")
-print(f"Average PnL per trade: {average_trade_pnl:.2f}")
-print(f"Final PnL: {final_pnl:.2f}")
-print(f"Win rate: {win_rate:.2%}")
-print(f"Sharpe ratio: {sharpe:.2f}")
+# pnl, positions = strategy.pnl(spread, t)
+# final_pnl = strategy.final_pnl(pnl)
+# trade_pnls = strategy.trade_pnls(pnl, positions)
+#
+# number_of_trades = strategy.number_of_trades(trade_pnls)
+# average_trade_pnl = strategy.average_trade_pnl(trade_pnls)
+# win_rate = strategy.win_rate(trade_pnls, number_of_trades)
+# sharpe = strategy.sharpe(trade_pnls, average_trade_pnl)
+#
+# print(f"Number of trades: {number_of_trades}")
+# print(f"Average PnL per trade: {average_trade_pnl:.2f}")
+# print(f"Final PnL: {final_pnl:.2f}")
+# print(f"Win rate: {win_rate:.2%}")
+# print(f"Sharpe ratio: {sharpe:.2f}")
 ```
