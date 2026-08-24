@@ -48,7 +48,7 @@ dt = 0.01
 n_steps = 20000
 n_paths = 1
 
-rng = np.random.default_rng(42)
+rng = np.random.default_rng(50)
 
 t = ou.time_grid(dt, n_steps)
 path = ou.simulate_paths(x0, params, dt, n_steps, n_paths, rng)
@@ -154,8 +154,9 @@ spread = test[:, 0]
 
 pnl = positions[:-1] * np.diff(spread)
 cumulative_pnl = np.cumsum(pnl)
+final_pnl = cumulative_pnl[-1]
 
-print(cumulative_pnl)
+print(final_pnl)
 ```
 
 For this strategy we will define the number of trades as one complete entry-to-exit cycle.
@@ -166,29 +167,84 @@ in_trade = False
 trade_pnl = 0.0
 
 for i, position in enumerate(positions[:-1]):
+
     if not in_trade and position != 0:
+        # Enter trade
         in_trade = True
         trade_pnl = pnl[i]
 
     elif in_trade and position != 0:
-        trade_pnl = pnl[i]
+        # Continue holding
+        trade_pnl += pnl[i]
 
     elif in_trade and position == 0:
+        # Exit trade
         trade_pnls.append(trade_pnl)
         in_trade = False
         trade_pnl = 0.0
 
 number_of_trades = len(trade_pnls)
+average_trade_pnl = np.mean(trade_pnls)
+
 winning_trades = sum(trade_pnl > 0 for trade_pnl in trade_pnls)
+
 if number_of_trades > 0:
     win_rate = winning_trades / number_of_trades
-else: 
+else:
     win_rate = 0.0
 
+
 print(f"Number of trades: {number_of_trades}")
+print(f"Average PnL per trade: {average_trade_pnl}")
 print(f"Win rate: {win_rate:.2%}")
+```
 
+Note that for the win rate here, only completed trades are included.
 
+```{python}
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x = t_test[1:],
+        y = cumulative_pnl,
+        name = "Synthetic PnL accumulation",
+        mode = "lines",
+    )
+)
+
+fig.update_layout(
+    title = "Synthetic PnL Accumulation",
+    xaxis_title = "Time",
+    yaxis_title = "Cumulative PnL"
+)
+
+utils.apply_theme(fig)
+fig.show()
+
+running_max = np.maximum.accumulate(cumulative_pnl)
+drawdown = cumulative_pnl - running_max
+max_drawdown = drawdown.min()
+
+print(f"Maximum Drawdown: {max_drawdown}")
+
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x = t_test[1:],
+        y = drawdown,
+        name = "Synthetic Drawdown Accumulation",
+        mode = "lines",
+    )
+)
+
+fig.update_layout(
+    title = "Synthetic Strategy Drawdown",
+    xaxis_title = "Time",
+    yaxis_title = "Cumulative Drawdown"
+)
+
+utils.apply_theme(fig)
+fig.show()
 ```
 
 ```{python}
