@@ -188,11 +188,9 @@ if number_of_trades > 0:
 else:
     win_rate = 0.0
 
-sharpe = average_trade_pnl / std_trade_pnl * np.sqrt(252)
-time_in_position = sum(pos != 0 for pos in positions)/len(positions)
+sharpe = average_trade_pnl / std_trade_pnl
 
 print(f"Number of trades: {number_of_trades}")
-print(f"Percentage time in position: {time_in_position*100 :.2%}%")
 print(f"Average PnL per trade: {average_trade_pnl:.2f}")
 print(f"Win rate: {win_rate:.2%}")
 print(f"Sharpe ratio: {sharpe:.2f}")
