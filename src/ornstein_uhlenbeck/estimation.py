@@ -31,11 +31,11 @@ def neg_log_likelihood(
     return -log_likelihood
 
 
-def AR1_intial_estimators(x: np.ndarray) -> list:
+def AR1_intial_estimators(x: np.ndarray, t: np.ndarray) -> list:
     AR1_model = AutoReg(x, 1)
     AR1_result = AR1_model.fit()
 
-    delta_t = 1
+    delta_t = t[1]-t[0]
 
     alpha, beta = AR1_result.params[0], AR1_result.params[1]
 
@@ -64,7 +64,7 @@ def estimate_parameters(
 
         return neg_log_likelihood(x, t, ou_params)
 
-    initial_params = AR1_intial_estimators(x)
+    initial_params = AR1_intial_estimators(x, t)
 
     return minimize(
         objective,
