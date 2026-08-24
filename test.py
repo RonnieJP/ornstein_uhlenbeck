@@ -58,22 +58,11 @@ def estimate_parameters(
     )
 
 
-prices = yf.download(
-    ["SHEL", "BP"],
-    period="5y",
-    auto_adjust=True,
-)["Close"]
-
 # dates = yf.download(
 #     ["SHEL", "BP"],
 #     period="5y",
 #     auto_adjust=True,
 # )["Date"]
-
-shel = prices["SHEL"].to_numpy()
-bp = prices["BP"].to_numpy()
-
-t = [i for i in range(len(bp))]
 
 
 # ------------------- AR1 ------------------#
@@ -88,6 +77,16 @@ def intial_estimators(x: np.ndarray, t: np.ndarray) -> list:
     est_sigma = np.std(epsilon)
     return [est_theta, est_mu, est_sigma]
 
+prices = yf.download(
+    ["SHEL", "BP"],
+    period="5y",
+    auto_adjust=True,
+)["Close"]
+
+shel = prices["SHEL"].to_numpy()
+bp = prices["BP"].to_numpy()
+
+t = [i for i in range(len(bp))]
 
 result = sm.OLS(shel, bp).fit()
 
