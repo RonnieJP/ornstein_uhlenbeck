@@ -301,13 +301,13 @@ We have obtained data from two correlated oil stocks, SHEL and BP.
 Let 
 
 $$
-P_t^{\mathrm{SHEL}} = P_t^{(1)} = \mathrm{SHEL price at time} t,
+P_t^{\text{SHEL}} = P_t^{(1)} = \text{SHEL price at time } t,
 $$
 
 and
 
 $$
-P_t^{\mathrm{BP}} = P_t^{(2)} = \mathrm{BP price at time} t.
+P_t^{\text{BP}} = P_t^{(2)} = \text{BP price at time } t.
 $$
 
 We wish to exploit the fact that the two companies operate in the same broad industry and therefore have economically related prices. We require a linear combination of the two prices that exhibits mean-reverting behaviour.
@@ -318,7 +318,7 @@ We wish to exploit the fact that the two companies operate in the same broad ind
 We propose the linear model
 
 $$
-P_t^{1} = \alpha + \beta P_t^{2} + \varepsilon_t.
+P_t^{(1)} = \alpha + \beta P_t^{(2)} + \varepsilon_t.
 $$
 
 Here:
@@ -408,99 +408,163 @@ A short spread will correspond to
 - $-1$ SHEL
 - $+\hat{\beta}$ BP.
 
-### Performance Calculation
 
-- Incremental PnL
-- Cumulative PnL
-- Final PnL
-- Completed trades
-- Win rate
-- Sharpe
-- Drawdown
-- Maximum Drawdown
 
+### Model Fitting
+
+
+We firstly determine the linear relationship between $\P^{\text{SHEL}}_t$ and $\P^{\text{BP}}_t$,
 ```{python}
-# import yfinance as yf
-# import ornstein_uhlenbeck.strategy as strategy
-# 
-# prices = yf.download(
-    # ["SHEL", "BP"],
-    # period="5y",
-    # auto_adjust=True,
-# )["Close"]
-# 
-# shel = prices["SHEL"].dropna().to_numpy()
-# bp = prices["BP"].dropna().to_numpy()
-# 
-# t = [i for i in range(len(bp))]
-# 
-# alpha, beta = strategy.estimate_hedge_parameters(shel,bp)
-# 
-# spread = shel - alpha - beta * bp
-# 
-# fig = go.Figure()
-# fig.add_trace(
-    # go.Scatter(
-        # x=t,
-        # y=bp,
-        # mode="lines",
-        # name="BP",
-    # )
-# )
-# 
-# fig.add_trace(
-    # go.Scatter(
-        # x=t,
-        # y=shel,
-        # mode="lines",
-        # name="SHEL",
-    # )
-# )
-# 
-# fig.update_layout(
-    # title="Stock Prices",
-    # xaxis_title="Trading Days from 24 Aug 2021",
-    # yaxis_title="Prices",
-# )
-# 
-# utils.apply_theme(fig)
-# fig.show()
-# 
-# fig = go.Figure()
-# fig.add_trace(
-    # go.Scatter(
-        # x=t,
-        # y=spread,
-        # mode="lines",
-        # name="Spread",
-    # )
-# )
-# 
-# fig.update_layout(
-    # title="Spread",
-    # xaxis_title="Trading Days from 21 Aug 2021",
-    # yaxis_title="Spread",
-# )
-# 
-# utils.apply_theme(fig)
-# fig.show()
-# 
-# print(f"beta: {beta:.2f}")
+import yfinance as yf
+import plotly.graph_objects as go
+
+prices = yf.download(
+    ["SHEL", "BP"],
+    period="5y",
+    auto_adjust=True,
+)["Close"]
+
+shel = prices["SHEL"].dropna().to_numpy()
+bp = prices["BP"].dropna().to_numpy()
+
+alpha, beta = strategy.estimate_hedge_parameters(shel,bp)
+
+print(f"Intercept, alpha: {float(alpha):.4f}")
+print(f"Hedge Ratio, beta: {float(beta):.4f}")
 ```
 
+Then, spread data is constructed using coefficients $\alpha$ and $\beta$, and split into sets of training data and test data as below.
+
 ```{python}
-# pnl, positions = strategy.pnl(spread, t)
-# final_pnl = strategy.final_pnl(pnl)
-# trade_pnls = strategy.trade_pnls(pnl, positions)
-#
-# number_of_trades = strategy.number_of_trades(trade_pnls)
-# average_trade_pnl = strategy.average_trade_pnl(trade_pnls)
-# win_rate = strategy.win_rate(trade_pnls, number_of_trades)
-# sharpe = strategy.sharpe(trade_pnls, average_trade_pnl)
-#
-# print(f"Number of trades: {number_of_trades}")
-# print(f"Average PnL per trade: {average_trade_pnl:.2f}")
-# print(f"Final PnL: {final_pnl:.2f}")
-# print(f"Win rate: {win_rate:.2%}")
-# print(f"Sharpe ratio: {sharpe:.2f}")
+from datetime import datetime
+spread = shel - alpha - beta * bp
+
+t = [i for i in range(len(bp))]
+
+split_index = int(0.75 * len(spread))
+
+train = spread[:split_index]
+test = spread[split_index - 1:]
+
+t_train = t[:split_index]
+t_test = t[split_index - 1:]
+
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x=t_train,
+        y=train,
+        mode="lines",
+        name="Training Data"
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=t_test,
+        y=test,
+        mode="lines",
+        name="Test Data",
+    )
+)
+
+fig.add_vline(x=t[split_index - 1],line_dash = "dash")
+
+from datetime import datetime
+five_years_ago = datetime.today()
+five_years_ago = five_years_ago.replace(year=five_years_ago.year-5)
+five_years_ago = str(five_years_ago.strftime('%Y-%m-%d'))
+
+fig.update_layout(
+    title="Training and Test Data on Spread",
+    xaxis_title=f"Trading Days from {five_years_ago}",
+    yaxis_title="Spread",
+)
+
+utils.apply_theme(fig)
+fig.show()
 ```
+
+We obtain estimated values of parameters $\theta$, $\mu$, and $\sigma$.
+
+```{python}
+import ornstein_uhlenbeck.estimation as estimation
+estimated_params = estimation.estimate_parameters(test, t_test)
+theta = estimated_params.theta
+mu = estimated_params.mu
+sigma = estimated_params.sigma
+
+print(f"theta: {theta:.4f}")
+print(f"mu: {mu:.4f}")
+print(f"sigma: {sigma:.4f}")
+```
+
+### Strategy Backtest and Evaluation
+
+1. PnL Visualisation and Calculations
+```{python}
+stationary_std = ou.stationary_std(estimated_params)
+
+upper_threshold = strategy.upper_threshold(estimated_params)
+lower_threshold = strategy.lower_threshold(estimated_params)
+
+positions = strategy.gen_positions(test, estimated_params)
+pnl = strategy.gen_pnl(test, estimated_params)
+cumulative_pnl = strategy.gen_cum_pnl(test, estimated_params)
+number_of_trades = strategy.num_trades(test, estimated_params)
+final_pnl = strategy.gen_final_pnl(test, estimated_params)
+average_trade_pnl = strategy.avg_trade_pnl(test, estimated_params)
+
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x=t_test,
+        y=cumulative_pnl,
+        mode="lines",
+    )
+)
+
+fig.update_layout(
+    title="Spread Test Data PnL Accumulation",
+    xaxis_title="Time",
+    yaxis_title="Cumulative PnL",
+)
+
+utils.apply_theme(fig)
+fig.show()
+
+print(f"Final PnL: {final_pnl:.2f}")
+print(f"Number of trades: {int(number_of_trades)}")
+print(f"Average PnL per trade: {average_trade_pnl:.2f}")
+```
+
+2. Risk Evaluation (Maximum Drawdown and Sharpe Ratio)
+```{python}
+drawdown = strategy.drawdown(test, estimated_params)
+max_drawdown = strategy.max_drawdown(test, estimated_params)
+sharpe_ratio = strategy.sharpe_ratio(test, estimated_params)
+
+fig = go.Figure()
+
+fig.add_trace(
+    go.Scatter(
+        x = t_test[1:],
+        y = drawdown,
+        name = "Synthetic Drawdown",
+        mode = "lines",
+    )
+)
+
+fig.update_layout(
+    title = "Synthetic Strategy Drawdown",
+    xaxis_title = "Time",
+    yaxis_title = "Drawdown"
+)
+
+utils.apply_theme(fig)
+fig.show()
+
+print(f"Maximum Drawdown: {max_drawdown:.2f}")
+print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
+```
+

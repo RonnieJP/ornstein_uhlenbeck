@@ -16,7 +16,10 @@ def gen_positions(x, params):
     positions = np.zeros(len(x))
     position = 0
 
-    for i, spread in enumerate(x[:, 0]):
+    if (x.ndim != 1):
+        x = x[:, 0]
+
+    for i, spread in enumerate(x):
         if position == 0:
             if spread < lower_threshold(params):
                 position = 1
@@ -37,7 +40,9 @@ def gen_positions(x, params):
 
 
 def gen_pnl(x, params):
-    spread = x[:, 0]
+    if (x.ndim != 1):
+            x = x[:, 0]
+    spread = x
     positions = gen_positions(x, params)
     return positions[:-1] * np.diff(spread)
 
