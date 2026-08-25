@@ -18,6 +18,14 @@ execute:
 jupyter: python3
 ---
 
+[GitHub](https://github.com/ronniejp/ornstein_uhlenbeck) |
+[OU Theory](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_theory.html) |
+[Numerical Validation](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_validation.html) |
+[Parameter Estimation](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_estimation.html) |
+[Pairs-Trading Backtest](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_strategy_backtest.html)
+
+---
+
 We previously introduced the Ornstein-Uhlenbeck (OU) process theoretically. This section provides a numerical validation of the corresponding transition and simulation methods. The objective is to verify that the simulated process reproduces the principal theoretical properties of the OU model. 
 
 For a process satisfying 

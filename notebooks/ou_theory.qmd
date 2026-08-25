@@ -18,6 +18,14 @@ execute:
 jupyter: python3
 ---
 
+[GitHub](https://github.com/ronniejp/ornstein_uhlenbeck) |
+[OU Theory](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_theory.html) |
+[Numerical Validation](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_validation.html) |
+[Parameter Estimation](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_estimation.html) |
+[Pairs-Trading Backtest](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_strategy_backtest.html)
+
+---
+
 ## Project aims
 
 This notebook develops the Ornstein-Uhlenbeck (OU) process as a model for mean-reverting spreads in pairs trading. We derive its theoretical properties, implement exact discrete-time simulation, estimate model parameters from data, and apply the model to empirical financial spreads.
