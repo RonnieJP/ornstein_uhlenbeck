@@ -289,8 +289,135 @@ fig.show()
 
 ## Backtest on Real Spread
 
-We have obtained data from two correlated oil stocks, SHEL and BP, where said correlation can be determined by the use of the Ordinary Least Squares model.
-We acquire the factor $b$ which describes the relationship between the two stocks.
+The real backtest initially presents us with two seperate estimation problems:
+
+1. Estimate the relationship between two assets and construct a spread.
+2. Determine whether the spread is well modelled by an OU process and estimate its parameters.
+
+### Starting with Two Asset-Price Series
+
+We have obtained data from two correlated oil stocks, SHEL and BP.
+
+Let 
+
+$$
+P_t^{\mathrm{SHEL}} = P_t^{(1)} = \mathrm{SHEL price at time} t,
+$$
+
+and
+
+$$
+P_t^{\mathrm{BP}} = P_t^{(2)} = \mathrm{BP price at time} t.
+$$
+
+We wish to exploit the fact that the two companies operate in the same broad industry and therefore have economically related prices. We require a linear combination of the two prices that exhibits mean-reverting behaviour.
+
+
+### Constructing a Linear Relationship Using OLS
+
+We propose the linear model
+
+$$
+P_t^{1} = \alpha + \beta P_t^{2} + \varepsilon_t.
+$$
+
+Here:
+
+- $\alpha$ is the intercept
+- $\beta$ is the hedge ratio
+- $\varepsilon_t$ is the residual.
+
+The motivation is that the two prices may have a persistent linear relationship. If BP increases by $\beta$ units of price, we expect SHEL to increase by approximately the corresponding amount, after accounting for the intercept.
+
+### The Hedge Ratio
+
+Suppose
+
+$$
+P_t^{(1)} \approx \alpha + \beta P_t^{(2)}.
+$$
+
+Then the quantity
+
+$$
+P_t^{(1)} - \beta P_t^{(2)}
+$$
+
+should be relatively stable compared with either individual price.
+
+This gives us a way of taking a relative-value position rather than betting on whether oil stocks rise or fall.
+
+For example, if we are to long the spread,
+
+$$
+S_t = P_t^{(1)} - \beta P_t^{(2)},
+$$
+
+we are to
+
+- long one unit of SHEL;
+- short $\beta$ units of BP.
+
+If both stocks rise or fall together, the common movement should cancel. Thus the position is intended to isolate the relative mispricing between the two assets.
+
+### Constructing the Spread
+
+Using the fitted regression, define the residual spread as 
+
+$$
+S_t = P_t^{(1)} - \hat{\alpha} - \hat{\beta} P_t^{(2)}.
+$$
+
+This is equal to the regression residual.
+
+### Fitting the OU Model to the Spread
+
+We then hypothesise that the spread $S_t$ follows the OU SDE
+
+$$
+dS_t = \theta(\mu - S_t)\,dt + \sigma\,dW_t,
+$$
+
+where the parameters have the usual interpretations.
+
+We then estimate the OU parameters and construct our positions in an identical manner to the synthetic backtest.
+
+### Translating the Spread Position into the Two Assets
+
+After determining the positions, we trade.
+
+Our spread is
+
+$$
+S_t = P_t^{(1)} - \hat{\alpha} - \hat{\beta} P_t^{(2)}.
+$$
+
+The constant $\alpha$ does not affect changes in the spread thus
+
+$$
+\Delta S_t = \Delta P_t^{(1)} - \hat{\beta}\Delta P_t^{(2)}.
+$$
+
+Hence, a long spread will correspond to 
+
+- $+1$ SHEL
+- $-\hat{\beta}$ BP.
+
+A short spread will correspond to 
+
+- $-1$ SHEL
+- $+\hat{\beta}$ BP.
+
+### Performance Calculation
+
+- Incremental PnL
+- Cumulative PnL
+- Final PnL
+- Completed trades
+- Win rate
+- Sharpe
+- Drawdown
+- Maximum Drawdown
 
 ```{python}
 # import yfinance as yf
@@ -307,9 +434,9 @@ We acquire the factor $b$ which describes the relationship between the two stock
 # 
 # t = [i for i in range(len(bp))]
 # 
-# b = strategy.estimate_hedge_parameters(shel,bp)
+# alpha, beta = strategy.estimate_hedge_parameters(shel,bp)
 # 
-# spread = shel - b * bp
+# spread = shel - alpha - beta * bp
 # 
 # fig = go.Figure()
 # fig.add_trace(
@@ -358,10 +485,8 @@ We acquire the factor $b$ which describes the relationship between the two stock
 # utils.apply_theme(fig)
 # fig.show()
 # 
-# print(f"b: {b:.2f}")
+# print(f"beta: {beta:.2f}")
 ```
-
-To estimate the returns on real financial data, we refactored and employed the identical strategy.
 
 ```{python}
 # pnl, positions = strategy.pnl(spread, t)
