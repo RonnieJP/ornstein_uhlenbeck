@@ -414,7 +414,7 @@ A short spread will correspond to
 
 ### Model Fitting
 
-We firstly determine the linear relationship between $\P^{\text{SHEL}}_t$ and $\P^{\text{BP}}_t$,
+We firstly determine the linear relationship between $P^{\text{SHEL}}_t$ and $P^{\text{BP}}_t$,
 
 ```{python}
 import yfinance as yf
@@ -586,7 +586,9 @@ thresholds = np.arange(1, 2.6, 0.1)
 sharpe_ratios = [strategy.sharpe_ratio(test, estimated_params, t) for t in thresholds]
 t_to_s = pd.DataFrame(list(zip(thresholds, sharpe_ratios)))
 t_to_s.columns = ["Threshold Values", "Sharpe Ratios"]
+
 fig = px.bar(t_to_s, x = "Threshold Values", y = "Sharpe Ratios", title = "Sharpe Ratios against varying Deviation Thresholds")
+utils.apply_theme(fig)
 fig.show()
 ```
 
