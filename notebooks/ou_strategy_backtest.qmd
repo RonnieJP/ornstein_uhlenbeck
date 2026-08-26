@@ -152,10 +152,12 @@ The parameter estimates can be compared with the known parameters used to genera
 The estimated parameters can then be used to determine the estimated stationary standard deviation and the corresponding entry thresholds for the out-of-sample test period.
 
 ```{python}
+threshold = 2
+
 stationary_std = ou.stationary_std(estimated_params)
 
-upper_threshold = strategy.upper_threshold(estimated_params)
-lower_threshold = strategy.lower_threshold(estimated_params)
+upper_threshold = strategy.upper_threshold(estimated_params, threshold)
+lower_threshold = strategy.lower_threshold(estimated_params, threshold)
 
 print(f"Estimated stationary standard deviation: {stationary_std:.4f}")
 print(f"Lower threshold: {lower_threshold:.4f}")
@@ -165,10 +167,10 @@ print(f"Upper threshold: {upper_threshold:.4f}")
 We then generate the trading positions from the test-period spread using the estimated parameters. The position takes values in $\{-1,0,1\}$, corresponding to a short position, no position, and a long position respectively.
 
 ```{python}
-positions = strategy.gen_positions(test, estimated_params)
-pnl = strategy.gen_pnl(test, estimated_params)
-cumulative_pnl = strategy.gen_cum_pnl(test, estimated_params)
-final_pnl = strategy.gen_final_pnl(test, estimated_params)
+positions = strategy.gen_positions(test, estimated_params, threshold)
+pnl = strategy.gen_pnl(test, estimated_params, threshold)
+cumulative_pnl = strategy.gen_cum_pnl(test, estimated_params, threshold)
+final_pnl = strategy.gen_final_pnl(test, estimated_params, threshold)
 
 print(f"Final PnL: {final_pnl:.2f}")
 ```
@@ -186,9 +188,9 @@ Consequently, the position determined from observation $i$ is used to capture th
 For the purpose of trade-level statistics, we define a trade as one complete entry-to-exit cycle. A trade therefore begins when a zero position becomes non-zero and ends when that position subsequently returns to zero.
 
 ```{python}
-number_of_trades = strategy.num_trades(test, estimated_params)
-average_trade_pnl = strategy.avg_trade_pnl(test, estimated_params)
-win_rate = strategy.winrate(test, estimated_params)
+number_of_trades = strategy.num_trades(test, estimated_params, threshold)
+average_trade_pnl = strategy.avg_trade_pnl(test, estimated_params, threshold)
+win_rate = strategy.winrate(test, estimated_params, threshold)
 
 print(f"Number of trades: {number_of_trades}")
 print(f"Average PnL per trade: {average_trade_pnl:.4f}")
@@ -213,7 +215,7 @@ $$
 $$
 
 ```{python}
-sharpe_ratio = strategy.sharpe_ratio(test, estimated_params)
+sharpe_ratio = strategy.sharpe_ratio(test, estimated_params, threshold)
 
 print(f"Sharpe ratio: {sharpe_ratio:.4f}")
 ```
@@ -233,8 +235,8 @@ $$
 The maximum drawdown is the minimum value of this series.
 
 ```{python}
-drawdown = strategy.drawdown(test, estimated_params)
-max_drawdown = strategy.max_drawdown(test, estimated_params)
+drawdown = strategy.drawdown(test, estimated_params, threshold)
+max_drawdown = strategy.max_drawdown(test, estimated_params, threshold)
 
 print(f"Maximum drawdown: {max_drawdown:.4f}")
 ```
@@ -412,8 +414,8 @@ A short spread will correspond to
 
 ### Model Fitting
 
-
 We firstly determine the linear relationship between $\P^{\text{SHEL}}_t$ and $\P^{\text{BP}}_t$,
+
 ```{python}
 import yfinance as yf
 import plotly.graph_objects as go
@@ -501,19 +503,23 @@ print(f"sigma: {sigma:.4f}")
 
 ### Strategy Backtest and Evaluation
 
+For sections 2.8.1 and 2.8.2 we assume deviation threshold as 2.
+
 1. PnL Visualisation and Calculations
 ```{python}
+threshold = 2
+
 stationary_std = ou.stationary_std(estimated_params)
 
-upper_threshold = strategy.upper_threshold(estimated_params)
-lower_threshold = strategy.lower_threshold(estimated_params)
+upper_threshold = strategy.upper_threshold(estimated_params, threshold)
+lower_threshold = strategy.lower_threshold(estimated_params, threshold)
 
-positions = strategy.gen_positions(test, estimated_params)
-pnl = strategy.gen_pnl(test, estimated_params)
-cumulative_pnl = strategy.gen_cum_pnl(test, estimated_params)
-number_of_trades = strategy.num_trades(test, estimated_params)
-final_pnl = strategy.gen_final_pnl(test, estimated_params)
-average_trade_pnl = strategy.avg_trade_pnl(test, estimated_params)
+positions = strategy.gen_positions(test, estimated_params, threshold)
+pnl = strategy.gen_pnl(test, estimated_params, threshold)
+cumulative_pnl = strategy.gen_cum_pnl(test, estimated_params, threshold)
+number_of_trades = strategy.num_trades(test, estimated_params, threshold)
+final_pnl = strategy.gen_final_pnl(test, estimated_params, threshold)
+average_trade_pnl = strategy.avg_trade_pnl(test, estimated_params, threshold)
 
 fig = go.Figure()
 fig.add_trace(
@@ -540,9 +546,9 @@ print(f"Average PnL per trade: {average_trade_pnl:.2f}")
 
 2. Risk Evaluation (Maximum Drawdown and Sharpe Ratio)
 ```{python}
-drawdown = strategy.drawdown(test, estimated_params)
-max_drawdown = strategy.max_drawdown(test, estimated_params)
-sharpe_ratio = strategy.sharpe_ratio(test, estimated_params)
+drawdown = strategy.drawdown(test, estimated_params, threshold)
+max_drawdown = strategy.max_drawdown(test, estimated_params, threshold)
+sharpe_ratio = strategy.sharpe_ratio(test, estimated_params, threshold)
 
 fig = go.Figure()
 
@@ -566,5 +572,21 @@ fig.show()
 
 print(f"Maximum Drawdown: {max_drawdown:.2f}")
 print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
+```
+
+3. Sharpe Ratio - Threshold Relationship
+
+In this section, we investigate the relationship between sharpe ratios and the selection of deviation thresholds.
+
+```{python}
+import plotly.express as px
+import pandas as pd
+
+thresholds = np.arange(1, 2.6, 0.1)
+sharpe_ratios = [strategy.sharpe_ratio(test, estimated_params, t) for t in thresholds]
+t_to_s = pd.DataFrame(list(zip(thresholds, sharpe_ratios)))
+t_to_s.columns = ["Threshold Values", "Sharpe Ratios"]
+fig = px.bar(t_to_s, x = "Threshold Values", y = "Sharpe Ratios", title = "Sharpe Ratios against varying Deviation Thresholds")
+fig.show()
 ```
 
