@@ -18,6 +18,14 @@ execute:
 jupyter: python3
 ---
 
+[GitHub](https://github.com/ronniejp/ornstein_uhlenbeck) |
+[OU Theory](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_theory.html) |
+[Numerical Validation](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_validation.html) |
+[Parameter Estimation](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_estimation.html) |
+[Pairs-Trading Backtest](https://ronniejp.github.io/ornstein_uhlenbeck/notebooks/ou_strategy_backtest.html)
+
+---
+
 In order to show how the Ornstein-Uhlenbeck (OU) process can be applied to pairs trading, we first conduct a backtest on a synthetic spread generated directly from an OU process. This allows the performance of the trading strategy to be evaluated in a controlled manner where the true parameters of the underlying process are known.
 
 We will then apply the same methodology to real asset-price data. For the real backtest we will first construct a linear spread from two asset price series and then fit an OU model to the observed spread.
